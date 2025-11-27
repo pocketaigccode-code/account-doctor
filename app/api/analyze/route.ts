@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { supabaseAdmin } from '@/lib/supabase'
 import { scoreAccount, generateDay1Content, generate30DayCalendar } from '@/lib/ai/gemini'
 
 export async function POST(request: NextRequest) {
@@ -11,12 +11,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '请提供扫描ID' }, { status: 400 })
     }
 
-    // 获取扫描数据
-    const scan = await prisma.scan.findUnique({
-      where: { id: scanId },
-    })
+    // 获取扫描数据 (使用Supabase Client)
+    const { data: scan, error: scanError } = await supabaseAdmin
+      .from('Scan')
+      .select('*')
+      .eq('id', scanId)
+      .single()
 
-    if (!scan) {
+    if (scanError || !scan) {
       return NextResponse.json({ error: '扫描记录不存在' }, { status: 404 })
     }
 
@@ -52,9 +54,10 @@ export async function POST(request: NextRequest) {
     // 3. 生成30天内容日历
     const calendar = await generate30DayCalendar(industry)
 
-    // 4. 创建诊断报告
-    const report = await prisma.report.create({
-      data: {
+    // 4. 创建诊断报告 (使用Supabase Client)
+    const { data: report, error: reportError } = await supabaseAdmin
+      .from('Report')
+      .insert({
         scanId: scan.id,
         userId: scan.userId,
         scoreBreakdown: {
@@ -76,18 +79,22 @@ export async function POST(request: NextRequest) {
           image_suggestion: day1Content.image_suggestion,
           best_time: day1Content.best_time,
         },
-        calendarOutline: calendar as any,
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30天后过期
-      },
-    })
+        calendarOutline: calendar,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      })
+      .select()
+      .single()
 
-    // 5. 更新扫描记录的评分
-    await prisma.scan.update({
-      where: { id: scanId },
-      data: {
-        score: scoreResult.total_score,
-      },
-    })
+    if (reportError || !report) {
+      console.error('创建报告失败:', reportError)
+      return NextResponse.json({ error: '创建报告失败' }, { status: 500 })
+    }
+
+    // 5. 更新扫描记录的评分 (使用Supabase Client)
+    await supabaseAdmin
+      .from('Scan')
+      .update({ score: scoreResult.total_score })
+      .eq('id', scanId)
 
     return NextResponse.json({
       reportId: report.id,
@@ -114,33 +121,41 @@ export async function GET(request: NextRequest) {
     const scanId = searchParams.get('scanId')
 
     let report
+    let scan
 
     if (reportId) {
-      report = await prisma.report.findUnique({
-        where: { id: reportId },
-        include: {
-          scan: true,
-        },
-      })
+      // 使用Supabase Client查询
+      const { data, error } = await supabaseAdmin
+        .from('Report')
+        .select('*, scan:Scan(*)')
+        .eq('id', reportId)
+        .single()
+
+      if (error || !data) {
+        return NextResponse.json({ error: '报告不存在' }, { status: 404 })
+      }
+      report = data
+      scan = data.scan
     } else if (scanId) {
-      report = await prisma.report.findUnique({
-        where: { scanId: scanId },
-        include: {
-          scan: true,
-        },
-      })
+      const { data, error } = await supabaseAdmin
+        .from('Report')
+        .select('*, scan:Scan(*)')
+        .eq('scanId', scanId)
+        .single()
+
+      if (error || !data) {
+        return NextResponse.json({ error: '报告不存在' }, { status: 404 })
+      }
+      report = data
+      scan = data.scan
     } else {
       return NextResponse.json({ error: '请提供报告ID或扫描ID' }, { status: 400 })
-    }
-
-    if (!report) {
-      return NextResponse.json({ error: '报告不存在' }, { status: 404 })
     }
 
     return NextResponse.json({
       id: report.id,
       scanId: report.scanId,
-      username: report.scan.username,
+      username: scan?.username || '',
       scoreBreakdown: report.scoreBreakdown,
       improvements: report.improvements,
       day1Content: report.day1Content,
