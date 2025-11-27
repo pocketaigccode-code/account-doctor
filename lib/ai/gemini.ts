@@ -49,39 +49,40 @@ export interface ContentCalendar {
 }
 
 /**
- * 调用Gemini API
+ * 调用Gemini API (OpenAI兼容格式)
  */
-async function callGemini(prompt: string): Promise<string> {
+async function callGemini(prompt: string, systemPrompt?: string): Promise<string> {
   try {
-    const response = await fetch(
-      `${DEERAPI_BASE_URL}/v1beta/models/${MODEL}:generateContent`,
-      {
-        method: 'POST',
-        headers: {
-          'x-goog-api-key': DEERAPI_KEY,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-        }),
-      }
-    )
+    const messages: any[] = []
+    if (systemPrompt) {
+      messages.push({ role: 'system', content: systemPrompt })
+    }
+    messages.push({ role: 'user', content: prompt })
+
+    const response = await fetch(`${DEERAPI_BASE_URL}/v1/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${DEERAPI_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages: messages,
+        temperature: 0.7,
+        max_tokens: 2000,
+      }),
+    })
 
     if (!response.ok) {
+      const errorText = await response.text()
+      console.error('DeerAPI错误响应:', errorText)
       throw new Error(`DeerAPI调用失败: ${response.status}`)
     }
 
     const data = await response.json()
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+    const text = data.choices?.[0]?.message?.content || ''
 
+    console.log('DeerAPI调用成功,返回内容长度:', text.length)
     return text
   } catch (error) {
     console.error('Gemini API调用失败:', error)
@@ -132,7 +133,7 @@ export async function scoreAccount(accountData: {
 }`
 
   try {
-    const text = await callGemini(prompt)
+    const text = await callGemini(prompt, '你是专业的Instagram营销顾问,擅长数据分析和账号诊断。')
     console.log('AI评分响应:', text.substring(0, 200))
 
     // 提取JSON
@@ -177,7 +178,7 @@ export async function generateDay1Content(accountData: {
 }`
 
   try {
-    const text = await callGemini(prompt)
+    const text = await callGemini(prompt, '你是专业的Instagram内容创作专家。')
     console.log('Day 1内容响应:', text.substring(0, 100))
 
     const jsonMatch = text.match(/\{[\s\S]*\}/)
