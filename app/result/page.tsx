@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 
 interface ReportData {
@@ -28,7 +28,7 @@ interface ReportData {
   calendarOutline: any
 }
 
-export default function ResultPage() {
+function ResultPageContent() {
   const searchParams = useSearchParams()
   const reportId = searchParams.get('id')
   const [report, setReport] = useState<ReportData | null>(null)
@@ -327,5 +327,20 @@ function Dimension({ label, score, max }: { label: string; score: number; max: n
       </div>
       <div className="text-[10px] text-[#9CA3AF]">/{max}</div>
     </div>
+  )
+}
+
+export default function ResultPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#F5F5F7] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-3 border-[#E5E7EB] border-t-[#8B5CF6] rounded-full animate-spin mx-auto mb-3"></div>
+          <p className="text-[13px] text-[#6B7280]">加载中...</p>
+        </div>
+      </div>
+    }>
+      <ResultPageContent />
+    </Suspense>
   )
 }
