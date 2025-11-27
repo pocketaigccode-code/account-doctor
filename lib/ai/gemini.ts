@@ -1,10 +1,11 @@
-import OpenAI from 'openai'
+/**
+ * DeerAPI Gemini客户端
+ * 使用Gemini原生格式调用
+ */
 
-// 使用DeerAPI (OpenAI兼容格式)
-const client = new OpenAI({
-  apiKey: process.env.DEER_API_KEY || process.env.GOOGLE_GEMINI_API_KEY || '',
-  baseURL: process.env.DEER_API_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/openai/',
-})
+const DEERAPI_BASE_URL = process.env.DEER_API_BASE_URL || 'https://api.deerapi.com'
+const DEERAPI_KEY = process.env.DEER_API_KEY || ''
+const MODEL = 'gemini-3-pro-preview'
 
 /**
  * 账号评分结果接口
@@ -45,6 +46,47 @@ export interface ContentCalendar {
       unlocked: boolean
     }[]
   }[]
+}
+
+/**
+ * 调用Gemini API
+ */
+async function callGemini(prompt: string): Promise<string> {
+  try {
+    const response = await fetch(
+      `${DEERAPI_BASE_URL}/v1beta/models/${MODEL}:generateContent`,
+      {
+        method: 'POST',
+        headers: {
+          'x-goog-api-key': DEERAPI_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: prompt,
+                },
+              ],
+            },
+          ],
+        }),
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error(`DeerAPI调用失败: ${response.status}`)
+    }
+
+    const data = await response.json()
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+
+    return text
+  } catch (error) {
+    console.error('Gemini API调用失败:', error)
+    throw error
+  }
 }
 
 /**
@@ -90,31 +132,22 @@ export async function scoreAccount(accountData: {
 }`
 
   try {
-    const response = await client.chat.completions.create({
-      model: 'gemini-2.0-flash-exp',
-      messages: [
-        { role: 'system', content: '你是专业的Instagram营销顾问,擅长数据分析和账号诊断。' },
-        { role: 'user', content: prompt },
-      ],
-      temperature: 0.7,
-      max_tokens: 1000,
-    })
-
-    const text = response.choices[0]?.message?.content || ''
-    console.log('AI评分响应:', text)
+    const text = await callGemini(prompt)
+    console.log('AI评分响应:', text.substring(0, 200))
 
     // 提取JSON
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
-      console.error('无法解析JSON,使用默认数据')
-      return getDefaultScore(accountData)
+      console.error('无法解析JSON,使用智能降级')
+      return getSmartScore(accountData)
     }
 
     const scoreData = JSON.parse(jsonMatch[0])
+    console.log('AI评分成功:', scoreData.total_score)
     return scoreData as AccountScore
   } catch (error) {
-    console.error('AI评分失败:', error)
-    return getDefaultScore(accountData)
+    console.error('AI评分失败,使用智能降级:', error)
+    return getSmartScore(accountData)
   }
 }
 
@@ -144,29 +177,20 @@ export async function generateDay1Content(accountData: {
 }`
 
   try {
-    const response = await client.chat.completions.create({
-      model: 'gemini-2.0-flash-exp',
-      messages: [
-        { role: 'system', content: '你是专业的Instagram内容创作专家。' },
-        { role: 'user', content: prompt },
-      ],
-      temperature: 0.8,
-      max_tokens: 800,
-    })
-
-    const text = response.choices[0]?.message?.content || ''
-    console.log('Day 1内容响应:', text)
+    const text = await callGemini(prompt)
+    console.log('Day 1内容响应:', text.substring(0, 100))
 
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
-      return getDefaultDay1Content(accountData)
+      return getSmartDay1Content(accountData)
     }
 
     const content = JSON.parse(jsonMatch[0])
+    console.log('Day 1内容生成成功')
     return content as Day1Content
   } catch (error) {
-    console.error('Day 1内容生成失败:', error)
-    return getDefaultDay1Content(accountData)
+    console.error('Day 1内容生成失败,使用智能降级:', error)
+    return getSmartDay1Content(accountData)
   }
 }
 
@@ -196,16 +220,7 @@ export async function generate30DayCalendar(industry: string): Promise<ContentCa
 }`
 
   try {
-    const response = await client.chat.completions.create({
-      model: 'gemini-2.0-flash-exp',
-      messages: [
-        { role: 'user', content: prompt },
-      ],
-      temperature: 0.7,
-      max_tokens: 1500,
-    })
-
-    const text = response.choices[0]?.message?.content || ''
+    const text = await callGemini(prompt)
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
       return getDefaultCalendar()
@@ -215,26 +230,60 @@ export async function generate30DayCalendar(industry: string): Promise<ContentCa
     if (calendar.weeks?.[0]?.posts?.[0]) {
       calendar.weeks[0].posts[0].unlocked = true
     }
+    console.log('30天日历生成成功')
     return calendar as ContentCalendar
   } catch (error) {
-    console.error('30天日历生成失败:', error)
+    console.error('30天日历生成失败,使用默认模板:', error)
     return getDefaultCalendar()
   }
 }
 
 /**
- * 默认评分(基于实际数据计算)
+ * 智能评分(基于实际数据计算)
  */
-function getDefaultScore(accountData: any): AccountScore {
-  // 基于实际数据计算分数
+function getSmartScore(accountData: any): AccountScore {
   const followerRatio = accountData.followers / Math.max(accountData.following, 1)
-  const contentScore = Math.min(30, (accountData.bio?.length || 0) / 5 + (accountData.postCount > 0 ? 15 : 0))
-  const engagementScore = Math.min(25, followerRatio > 2 ? 20 : followerRatio * 10)
-  const vitalityScore = Math.min(20, Math.floor(accountData.postCount / 10))
-  const growthScore = Math.min(15, Math.floor(accountData.followers / 1000))
-  const audienceScore = 5
+  const bioLength = accountData.bio?.length || 0
+
+  // 内容质量评分 (0-30)
+  let contentScore = 0
+  contentScore += Math.min(10, bioLength / 10) // Bio长度
+  contentScore += accountData.postCount > 0 ? 10 : 0 // 有内容
+  contentScore += bioLength > 50 ? 5 : 0 // Bio完整
+  contentScore += bioLength > 100 ? 5 : 0 // Bio详细
+
+  // 互动健康评分 (0-25)
+  let engagementScore = 0
+  if (followerRatio > 10) engagementScore = 25 // 优秀比例
+  else if (followerRatio > 5) engagementScore = 20
+  else if (followerRatio > 2) engagementScore = 15
+  else if (followerRatio > 1) engagementScore = 10
+  else engagementScore = 5
+
+  // 账号活力评分 (0-20)
+  const vitalityScore = Math.min(20, Math.floor(accountData.postCount / 20))
+
+  // 增长潜力评分 (0-15)
+  const growthScore = Math.min(15, Math.floor(accountData.followers / 10000))
+
+  // 受众匹配评分 (0-10)
+  const audienceScore = bioLength > 50 ? 8 : 5
 
   const total = Math.floor(contentScore + engagementScore + vitalityScore + growthScore + audienceScore)
+
+  // 生成具体问题
+  const issues = []
+  if (bioLength < 50) issues.push(`Bio信息过于简短(${bioLength}字),建议扩展到100字以上,包含品牌介绍、联系方式和核心卖点`)
+  else if (bioLength < 100) issues.push('Bio可以更详细,添加更多品牌故事和差异化价值')
+  else issues.push('Bio内容充实,可以进一步优化关键词布局')
+
+  if (accountData.postCount < 50) issues.push(`发帖数量较少(${accountData.postCount}篇),建议保持每周3-5次的规律更新`)
+  else if (accountData.postCount < 100) issues.push('内容数量适中,建议重点优化爆款内容占比')
+  else issues.push(`内容数量充足(${accountData.postCount}篇),重点优化内容质量和互动率`)
+
+  if (followerRatio < 1) issues.push(`粉丝/关注比例失衡(${accountData.followers}/${accountData.following}),建议减少关注数或提升内容吸引力`)
+  else if (followerRatio < 2) issues.push('粉丝互动可以进一步优化,尝试提问、投票等互动型内容')
+  else issues.push('粉丝基础良好,建议开展用户生成内容(UGC)活动')
 
   return {
     content_quality_score: Math.floor(contentScore),
@@ -244,20 +293,19 @@ function getDefaultScore(accountData: any): AccountScore {
     audience_match_score: audienceScore,
     total_score: total,
     grade: total >= 80 ? '优秀' : total >= 60 ? '良好' : total >= 40 ? '待改进' : '警戒',
-    top_3_issues: [
-      accountData.bio?.length < 50 ? 'Bio信息过于简短,建议添加更多品牌介绍' : 'Bio可以更突出核心卖点',
-      accountData.postCount < 100 ? '发帖数量较少,建议保持规律更新' : '内容数量充足,重点优化质量',
-      followerRatio < 1 ? '关注数高于粉丝数,建议提升账号吸引力' : '粉丝互动可以进一步优化',
-    ],
-    urgent_action: accountData.bio?.length < 20 ? '立即优化Bio,添加完整的品牌介绍和联系方式' : '优化内容策略,提升用户互动',
+    top_3_issues: issues.slice(0, 3),
+    urgent_action: bioLength < 20 ? '立即优化Bio,添加完整的品牌介绍和联系方式' : issues[0],
   }
 }
 
-function getDefaultDay1Content(accountData: any): Day1Content {
+function getSmartDay1Content(accountData: any): Day1Content {
+  const username = accountData.username
+  const industry = accountData.industry || '品牌'
+
   return {
-    caption: `【${accountData.industry || '品牌'}故事】\n\n每个成功的品牌背后都有一个独特的故事。@${accountData.username} 的旅程始于对品质的执着追求...\n\n我们相信,真诚的内容能够打动人心。关注我们,一起见证更多精彩时刻!\n\n👉 今天就开始你的品牌之旅!`,
-    hashtags: ['#品牌故事', '#创业', `#${accountData.industry || '生活'}`, '#本地生活', '#小而美', '#用心经营', '#品质生活', '#支持本地', '#日常分享', '#新篇章'],
-    image_suggestion: '温暖明亮的品牌场景照片,展示产品或服务的核心价值,色调温馨,构图简洁,突出品牌特色',
+    caption: `【${industry}故事】\n\n每个成功的品牌背后都有一个独特的故事。@${username} 的旅程始于对品质的执着追求...\n\n我们相信,真诚的内容能够打动人心。关注我们,一起见证更多精彩时刻!\n\n👉 今天就开始你的品牌之旅!`,
+    hashtags: ['#品牌故事', '#创业', `#${industry}`, '#本地生活', '#小而美', '#用心经营', '#品质生活', '#支持本地', '#日常分享', '#新篇章'],
+    image_suggestion: `温暖明亮的${industry}场景照片,展示产品或服务的核心价值,色调温馨,构图简洁,突出品牌特色`,
     best_time: '周三 18:00-20:00',
   }
 }
