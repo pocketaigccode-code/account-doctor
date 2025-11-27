@@ -21,6 +21,8 @@ export default function Home() {
     setIsLoading(true)
 
     try {
+      console.log('🚀 [AccountDoctor] 开始扫描账号:', username)
+
       const scanRes = await fetch('/api/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -29,6 +31,7 @@ export default function Home() {
 
       if (!scanRes.ok) throw new Error('扫描请求失败')
       const { scanId } = await scanRes.json()
+      console.log('✅ [扫描] 扫描任务已创建, ID:', scanId)
 
       let attempts = 0
       const maxAttempts = 30
@@ -48,7 +51,9 @@ export default function Home() {
       }
 
       await checkStatus()
+      console.log('✅ [扫描] Instagram数据获取完成')
 
+      console.log('🤖 [AI] 开始调用DeerAPI进行分析...')
       const analyzeRes = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -56,9 +61,12 @@ export default function Home() {
       })
 
       if (!analyzeRes.ok) throw new Error('分析失败')
-      const { reportId } = await analyzeRes.json()
+      const analyzeData = await analyzeRes.json()
+      console.log('✅ [AI] 分析完成, 报告ID:', analyzeData.reportId)
+      console.log('📊 [结果] 账号评分:', analyzeData.score, '等级:', analyzeData.grade)
+      console.log('🔍 [调试信息]', analyzeData.debug)
 
-      router.push(`/result?id=${reportId}`)
+      router.push(`/result?id=${analyzeData.reportId}`)
     } catch (err) {
       setError((err as Error).message || '发生错误,请重试')
       setIsLoading(false)

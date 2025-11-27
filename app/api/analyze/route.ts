@@ -103,6 +103,11 @@ export async function POST(request: NextRequest) {
       score: scoreResult.total_score,
       grade: scoreResult.grade,
       message: '分析完成',
+      debug: {
+        aiUsed: scoreResult.total_score > 50 ? 'DeerAPI' : '智能降级',
+        scoreBreakdown: scoreResult,
+        day1Preview: day1Content.caption.substring(0, 50) + '...',
+      },
     })
   } catch (error) {
     console.error('分析失败:', error)
