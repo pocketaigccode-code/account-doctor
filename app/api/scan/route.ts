@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase'
 import { scrapeInstagramProfile } from '@/lib/scrapers/instagram'
+import { scrapeInstagramWithApify } from '@/lib/scrapers/apify-instagram'
 import { cleanInstagramUsername } from '@/lib/utils'
 
 export async function POST(request: NextRequest) {
@@ -54,8 +55,15 @@ async function performScan(scanId: string, username: string) {
   try {
     console.log(`开始扫描账号: ${username}`)
 
-    // 1. 爬取Instagram数据
-    const scanData = await scrapeInstagramProfile(username)
+    // 1. 优先使用Apify爬取Instagram数据(更稳定)
+    let scanData
+    try {
+      scanData = await scrapeInstagramWithApify(username)
+      console.log(`[Apify] 数据获取成功`)
+    } catch (apifyError) {
+      console.log(`[Apify] 失败,降级到Puppeteer:`, apifyError)
+      scanData = await scrapeInstagramProfile(username)
+    }
 
     // 2. 更新扫描记录 (使用Supabase Client)
     const { error: updateError } = await supabaseAdmin
