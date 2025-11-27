@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 用户表
+model User {
+  id               String           @id @default(cuid())
+  email            String           @unique
+  name             String?
+  subscriptionTier SubscriptionTier @default(FREE)
+  scansRemaining   Int              @default(3) // 免费用户限3次
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  scans   Scan[]
+  reports Report[]
+
+  @@index([email])
+}
+
+enum SubscriptionTier {
+  FREE
+  BASIC
+  PRO
+  ENTERPRISE
+}
+
+// 扫描记录表
+model Scan {
+  id       String     @id @default(cuid())
+  userId   String?    // 可为空(未登录扫描)
+  user     User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform String     @default("instagram")
+  username String
+  scanData Json? // 原始爬取数据
+  score    Int? // 0-100评分
+  status   ScanStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  report Report?
+
+  @@index([userId, platform])
+  @@index([username, platform])
+}
+
+enum ScanStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+// 诊断报告表
+model Report {
+  id              String    @id @default(cuid())
+  scanId          String    @unique
+  scan            Scan      @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  userId          String?
+  user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  scoreBreakdown  Json // 各维度得分
+  improvements    Json // 3个改进建议
+  day1Content     Json // Day 1完整内容
+  calendarOutline Json // 30天日历大纲
+  generatedAt     DateTime  @default(now())
+  expiresAt       DateTime? // 报告有效期
+
+  @@index([scanId])
+  @@index([userId])
+}
