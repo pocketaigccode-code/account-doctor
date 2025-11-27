@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomUUID } from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase'
 import { scoreAccount, generateDay1Content, generate30DayCalendar } from '@/lib/ai/gemini'
 
@@ -58,6 +59,7 @@ export async function POST(request: NextRequest) {
     const { data: report, error: reportError } = await supabaseAdmin
       .from('Report')
       .insert({
+        id: randomUUID(),
         scanId: scan.id,
         userId: scan.userId,
         scoreBreakdown: {

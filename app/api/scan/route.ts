@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomUUID } from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase'
 import { scrapeInstagramProfile } from '@/lib/scrapers/instagram'
 import { cleanInstagramUsername } from '@/lib/utils'
@@ -18,6 +19,7 @@ export async function POST(request: NextRequest) {
     const { data: scan, error: scanError } = await supabaseAdmin
       .from('Scan')
       .insert({
+        id: randomUUID(),
         username: cleanedUsername,
         platform: 'instagram',
         userId: userId || null,
