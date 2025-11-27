@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
           image_suggestion: day1Content.image_suggestion,
           best_time: day1Content.best_time,
         },
-        calendarOutline: calendar,
+        calendarOutline: calendar as any,
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30天后过期
       },
     })
