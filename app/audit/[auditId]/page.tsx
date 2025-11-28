@@ -24,6 +24,7 @@ export default function AuditResultPage({ params }: PageProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [pollingCount, setPollingCount] = useState(0)
+  const [aiFailed, setAiFailed] = useState(false)
 
   // 阶段1: 获取即时数据
   useEffect(() => {
@@ -37,9 +38,6 @@ export default function AuditResultPage({ params }: PageProps) {
         if (data.error) {
           console.error('❌ [结果页] 错误:', data.error, data.message)
           setError(data.ui_message || data.message)
-        } else if (data.status === 'ai_failed') {
-          // AI分析失败
-          setError('AI分析失败,请返回首页重新诊断')
         } else {
           // 如果有profile_snapshot,说明数据已准备好
           if (data.profile_snapshot) {
@@ -47,6 +45,13 @@ export default function AuditResultPage({ params }: PageProps) {
             console.log('📊 [结果页] Diagnosis Card:', data.diagnosis_card)
             setInstantData(data.profile_snapshot)
             setDiagnosisData(data.diagnosis_card)
+
+            // 检查AI是否失败
+            if (data.status === 'ai_failed') {
+              console.warn('⚠️ [结果页] AI分析失败,但显示基础数据')
+            }
+          } else {
+            setError('数据未准备好,请稍后刷新')
           }
         }
       })
@@ -72,6 +77,14 @@ export default function AuditResultPage({ params }: PageProps) {
         .then(res => res.json())
         .then(data => {
           console.log('📥 [结果页] 轮询响应:', data)
+
+          // 检查AI是否失败
+          if (data.status === 'ai_failed') {
+            console.error('❌ [结果页] AI分析失败,停止轮询')
+            setAiFailed(true)
+            clearInterval(pollInterval)
+            return
+          }
 
           if (data.diagnosis_card) {
             console.log('✅ [结果页] AI增强数据已就绪!')
@@ -148,6 +161,8 @@ export default function AuditResultPage({ params }: PageProps) {
         {/* 阶段2: AI增强数据 - 渐进式显示 */}
         {diagnosisData ? (
           <DiagnosisCard data={diagnosisData} />
+        ) : aiFailed ? (
+          <DiagnosisCardAIFailed />
         ) : (
           <DiagnosisCardSkeleton />
         )}
@@ -160,6 +175,33 @@ export default function AuditResultPage({ params }: PageProps) {
           <ExecutionCalendar calendar={slowData.execution_calendar} />
         )}
       </main>
+    </div>
+  )
+}
+
+/**
+ * AI分析失败提示卡片
+ */
+function DiagnosisCardAIFailed() {
+  return (
+    <div className="bg-white border border-sand-200 p-10 mb-8 shadow-sm">
+      <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-8">诊断结果</h2>
+
+      <div className="text-center py-12">
+        <div className="w-16 h-16 bg-yellow-50 border-2 border-yellow-600 flex items-center justify-center mx-auto mb-4 rounded-full">
+          <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <h3 className="font-serif text-2xl font-bold text-charcoal-900 mb-2">AI 分析失败</h3>
+        <p className="font-sans text-sm text-charcoal-600 mb-6">无法生成诊断评分,请返回首页重新诊断</p>
+        <button
+          onClick={() => (window.location.href = '/')}
+          className="bg-charcoal-900 text-white font-sans font-semibold py-3 px-6 hover:bg-charcoal-800 transition-colors"
+        >
+          返回首页重试
+        </button>
+      </div>
     </div>
   )
 }
