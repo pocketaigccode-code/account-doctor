@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react'
 import { FullStrategyPlan } from './FullStrategyPlan'
 
 interface StrategyData {
-  strategy_section: {
+  strategy_section?: {
     brand_persona: {
       archetype: string
       one_liner_bio: string
@@ -25,7 +25,7 @@ interface StrategyData {
       percentage: number
     }>
   }
-  execution_calendar: {
+  execution_calendar?: {
     day_1_detail: {
       title: string
       caption: string
@@ -38,6 +38,7 @@ interface StrategyData {
       idea: string
     }>
   }
+  strategy_plan?: any  // 新格式的完整策划案
 }
 
 interface StrategySectionProps {
