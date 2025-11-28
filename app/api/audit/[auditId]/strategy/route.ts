@@ -216,7 +216,7 @@ export async function GET(
         clearInterval(heartbeat)
 
         // 保存错误状态
-        await supabaseAdmin
+        supabaseAdmin
           .from('audits')
           .update({
             status: 'failed',
@@ -224,8 +224,9 @@ export async function GET(
             error_message: error.message
           })
           .eq('id', auditId)
-          .then(() => {})
-          .catch(() => {})
+          .then(() => {
+            // 忽略错误
+          })
 
         // 推送错误事件
         sendEvent('error', {
