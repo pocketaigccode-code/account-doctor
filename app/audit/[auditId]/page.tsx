@@ -67,12 +67,12 @@ export default function AuditResultPage({ params }: PageProps) {
 
   // 阶段2: 轮询AI增强数据 (如果诊断数据未就绪)
   useEffect(() => {
-    if (!instantData || diagnosisData || pollingCount >= 10) return
+    if (!instantData || diagnosisData || pollingCount >= 15) return  // 增加到15次
 
     console.log('🔄 [结果页] 开始轮询AI增强数据...')
 
     const pollInterval = setInterval(() => {
-      console.log(`🔄 [结果页] 轮询第 ${pollingCount + 1} 次...`)
+      console.log(`🔄 [结果页] 轮询第 ${pollingCount + 1}/15 次...`)
 
       fetch(`/api/audit/${auditId}/status`)
         .then(res => res.json())
@@ -101,7 +101,7 @@ export default function AuditResultPage({ params }: PageProps) {
         .catch(err => {
           console.error('❌ [结果页] 轮询失败:', err)
         })
-    }, 2000)  // 每2秒轮询一次
+    }, 5000)  // 每5秒轮询一次
 
     return () => clearInterval(pollInterval)
   }, [auditId, instantData, diagnosisData, pollingCount])
