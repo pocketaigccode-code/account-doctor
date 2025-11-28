@@ -109,25 +109,22 @@ async function processAIEnhancement(auditId: string, scanData: InstagramScanData
     const prompt = generateAnalystPrompt(scanData)
     const aiResponse = await callGemini(prompt, PROFILE_ANALYST_SYSTEM_PROMPT)
 
-    let aiEnhancedData: any
-
     // 提取JSON
     const jsonMatch = aiResponse.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
-      console.warn('[AI Enhancement] 返回格式错误,使用降级方案')
-      const fallback = getFastLaneFallback(scanData)
-      aiEnhancedData = {
-        category_label: fallback.profile_snapshot.category_label,
-        missing_elements: fallback.profile_snapshot.missing_elements,
-        diagnosis_card: fallback.diagnosis_card
-      }
-    } else {
-      const parsed = JSON.parse(jsonMatch[0])
-      aiEnhancedData = {
-        category_label: parsed.profile_snapshot?.category_label || '本地商家',
-        missing_elements: parsed.profile_snapshot?.missing_elements || [],
-        diagnosis_card: parsed.diagnosis_card
-      }
+      throw new Error('AI返回格式错误,无法解析JSON')
+    }
+
+    const parsed = JSON.parse(jsonMatch[0])
+    const aiEnhancedData = {
+      category_label: parsed.profile_snapshot?.category_label || '未知',
+      missing_elements: parsed.profile_snapshot?.missing_elements || [],
+      diagnosis_card: parsed.diagnosis_card
+    }
+
+    // 验证必要字段
+    if (!aiEnhancedData.diagnosis_card || !aiEnhancedData.diagnosis_card.score) {
+      throw new Error('AI返回数据缺少必要字段')
     }
 
     // 获取现有的profile_snapshot
@@ -155,31 +152,20 @@ async function processAIEnhancement(auditId: string, scanData: InstagramScanData
 
     console.log(`[AI Enhancement] ✅ Completed for audit: ${auditId}`)
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[AI Enhancement] Failed:', error)
 
-    // AI失败时使用降级方案
-    const fallback = getFastLaneFallback(scanData)
-
-    // 获取现有的profile_snapshot
-    const { data: existingAudit } = await supabaseAdmin
-      .from('audits')
-      .select('profile_snapshot')
-      .eq('id', auditId)
-      .single()
-
+    // AI失败时标记为失败状态,不使用降级方案
     await supabaseAdmin
       .from('audits')
       .update({
-        profile_snapshot: {
-          ...(existingAudit?.profile_snapshot || {}),
-          category_label: fallback.profile_snapshot.category_label,
-          missing_elements: fallback.profile_snapshot.missing_elements
-        },
-        diagnosis_card: fallback.diagnosis_card,
-        status: 'snapshot_ready'
+        status: 'ai_failed',
+        error_code: 'AI_ENHANCEMENT_FAILED',
+        error_message: error.message || 'AI分析失败'
       })
       .eq('id', auditId)
+
+    throw error
   }
 }
 

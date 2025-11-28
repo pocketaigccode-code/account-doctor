@@ -37,6 +37,9 @@ export default function AuditResultPage({ params }: PageProps) {
         if (data.error) {
           console.error('❌ [结果页] 错误:', data.error, data.message)
           setError(data.ui_message || data.message)
+        } else if (data.status === 'ai_failed') {
+          // AI分析失败
+          setError('AI分析失败,请返回首页重新诊断')
         } else {
           // 如果有profile_snapshot,说明数据已准备好
           if (data.profile_snapshot) {

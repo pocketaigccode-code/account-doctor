@@ -147,28 +147,25 @@ export async function GET(
 
         let strategyData: any
 
-        try {
-          // 🔥 关键: SSE连接保持进程存活,AI可以安全执行
-          const aiResponse = await callGemini(
-            promptText,
-            STRATEGIC_DIRECTOR_SYSTEM_PROMPT
-          )
+        // 🔥 关键: SSE连接保持进程存活,AI可以安全执行
+        const aiResponse = await callGemini(
+          promptText,
+          STRATEGIC_DIRECTOR_SYSTEM_PROMPT
+        )
 
-          console.log(`[AI Prompt 2] Response preview:`, aiResponse.substring(0, 100))
+        console.log(`[AI Prompt 2] Response preview:`, aiResponse.substring(0, 100))
 
-          // 解析JSON
-          const jsonMatch = aiResponse.match(/\{[\s\S]*\}/)
-          if (!jsonMatch) {
-            throw new Error('AI_PARSE_ERROR')
-          }
+        // 解析JSON
+        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/)
+        if (!jsonMatch) {
+          throw new Error('AI返回格式错误,无法解析JSON')
+        }
 
-          strategyData = JSON.parse(jsonMatch[0])
+        strategyData = JSON.parse(jsonMatch[0])
 
-        } catch (aiError: any) {
-          console.error('[AI Prompt 2] Failed, using fallback:', aiError)
-
-          // 使用智能降级
-          strategyData = getStrategyFallback(category, profileSnapshot)
+        // 验证必要字段
+        if (!strategyData.strategy_section || !strategyData.execution_calendar) {
+          throw new Error('AI返回数据缺少必要字段')
         }
 
         // 更新进度
