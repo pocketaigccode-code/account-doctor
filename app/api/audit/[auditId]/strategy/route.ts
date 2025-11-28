@@ -36,7 +36,7 @@ async function callGemini(prompt: string, systemPrompt: string): Promise<string>
         { role: 'user', content: prompt }
       ],
       temperature: 0.7,
-      max_tokens: 8000,  // 增加到8000以支持详细策划案
+      max_tokens: 4000,  // 限制到4000以加快生成速度,避免超时
     }),
   })
 
