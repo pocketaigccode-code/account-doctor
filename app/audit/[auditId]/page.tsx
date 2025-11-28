@@ -49,6 +49,7 @@ export default function AuditResultPage({ params }: PageProps) {
             // 检查AI是否失败
             if (data.status === 'ai_failed') {
               console.warn('⚠️ [结果页] AI分析失败,但显示基础数据')
+              setAiFailed(true)
             }
           } else {
             setError('数据未准备好,请稍后刷新')
