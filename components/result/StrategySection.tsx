@@ -7,8 +7,11 @@
 
 import { useEffect, useState } from 'react'
 import { FullStrategyPlan } from './FullStrategyPlan'
+import { TextStrategyDisplay } from './TextStrategyDisplay'
 
 interface StrategyData {
+  strategy_text?: string  // 纯文本策划案(最新格式)
+  strategy_plan?: any  // 结构化策划案(旧格式)
   strategy_section?: {
     brand_persona: {
       archetype: string
@@ -38,7 +41,6 @@ interface StrategyData {
       idea: string
     }>
   }
-  strategy_plan?: any  // 新格式的完整策划案
 }
 
 interface StrategySectionProps {
@@ -123,13 +125,17 @@ export function StrategySection({ auditId, onDataLoaded }: StrategySectionProps)
   }
 
   // 渲染策略内容
-  // 判断是否有完整策划案(新格式)或简化版(旧格式)
+  // 纯文本格式策划案
+  if (strategy.strategy_text) {
+    return <TextStrategyDisplay text={strategy.strategy_text} />
+  }
+
+  // 旧格式: 简化版策略(向后兼容)
   if (strategy.strategy_plan) {
-    // 新格式: 完整策划案
     return <FullStrategyPlan plan={strategy.strategy_plan} />
   }
 
-  // 旧格式: 简化版策略
+  // 最旧格式: 简化版策略
   return (
     <div className="space-y-8">
       {/* 品牌人设 */}
