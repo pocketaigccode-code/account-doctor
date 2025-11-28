@@ -17,7 +17,7 @@ async function callGemini(prompt: string, systemPrompt: string): Promise<string>
   const DEERAPI_KEY = process.env.DEER_API_KEY || ''
 
   console.log('[AI Call] 📤 发送请求到 DeerAPI')
-  console.log('[AI Call] 模型:', 'gpt-4o-2024-08-06')
+  console.log('[AI Call] 模型:', 'gpt-5.1')
   console.log('[AI Call] System Prompt 长度:', systemPrompt.length, '字符')
   console.log('[AI Call] User Prompt 长度:', prompt.length, '字符')
   console.log('[AI Call] User Prompt 预览:', prompt.substring(0, 500))
@@ -29,7 +29,7 @@ async function callGemini(prompt: string, systemPrompt: string): Promise<string>
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4o-2024-08-06',
+      model: 'gpt-5.1',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: prompt }
@@ -41,8 +41,12 @@ async function callGemini(prompt: string, systemPrompt: string): Promise<string>
 
   if (!response.ok) {
     const errorText = await response.text()
-    console.error('[AI Call] ❌ DeerAPI 错误:', response.status, errorText)
-    throw new Error(`DeerAPI调用失败: ${response.status}`)
+    console.error('[AI Call] ❌ DeerAPI 错误')
+    console.error('[AI Call] 状态码:', response.status)
+    console.error('[AI Call] 错误详情:', errorText)
+    console.error('[AI Call] 请求URL:', `${DEERAPI_BASE_URL}/v1/chat/completions`)
+    console.error('[AI Call] API Key 存在?:', !!DEERAPI_KEY, '长度:', DEERAPI_KEY?.length)
+    throw new Error(`DeerAPI调用失败: ${response.status} - ${errorText}`)
   }
 
   const data = await response.json()
