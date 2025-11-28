@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getCachedOrFetch, getExpiresAt } from '@/lib/cache/apify-cache'
-import { generateAnalystPrompt, PROFILE_ANALYST_SYSTEM_PROMPT, getFastLaneFallback } from '@/lib/ai/prompts/profile-analyst'
+import { generateAnalystPrompt, PROFILE_ANALYST_SYSTEM_PROMPT } from '@/lib/ai/prompts/profile-analyst'
 import type { InstagramScanData } from '@/lib/scrapers/instagram'
 
 // 临时使用现有的callGemini (后续会优化)

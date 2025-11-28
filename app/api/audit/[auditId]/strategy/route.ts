@@ -6,7 +6,7 @@
 
 import { NextRequest } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { generateStrategyPrompt, STRATEGIC_DIRECTOR_SYSTEM_PROMPT, getStrategyFallback } from '@/lib/ai/prompts/strategic-director'
+import { generateStrategyPrompt, STRATEGIC_DIRECTOR_SYSTEM_PROMPT } from '@/lib/ai/prompts/strategic-director'
 
 // 🚨 Serverless配置 - 关键!
 export const runtime = 'nodejs'      // 使用Node.js运行时(非Edge)
