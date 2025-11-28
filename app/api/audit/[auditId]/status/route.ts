@@ -48,6 +48,14 @@ export async function GET(
         response.diagnosis_card = audit.diagnosis_card
         break
 
+      case 'ai_failed':
+        // AI分析失败,但仍返回基础数据
+        response.profile_snapshot = audit.profile_snapshot
+        response.diagnosis_card = null  // AI失败,没有诊断卡片
+        response.error_code = audit.error_code
+        response.error_message = audit.error_message
+        break
+
       case 'completed':
         // Slow Lane数据也已就绪
         response.profile_snapshot = audit.profile_snapshot
@@ -57,7 +65,7 @@ export async function GET(
         break
 
       case 'failed':
-        // 失败状态
+        // 完全失败状态
         response.error_code = audit.error_code
         response.error_message = audit.error_message
         break
