@@ -6,7 +6,7 @@
 
 import { NextRequest } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { generateTextStrategyPrompt, STRATEGIC_DIRECTOR_TEXT_PROMPT } from '@/lib/ai/prompts/strategic-director-text'
+import { generateStrategyPrompt, STRATEGIC_DIRECTOR_SYSTEM_PROMPT } from '@/lib/ai/prompts/strategic-director'
 
 // 🚨 Serverless配置 - 关键!
 export const runtime = 'nodejs'      // 使用Node.js运行时(非Edge)
@@ -36,7 +36,7 @@ async function callGemini(prompt: string, systemPrompt: string): Promise<string>
         { role: 'user', content: prompt }
       ],
       temperature: 0.7,
-      max_tokens: 3000,
+      max_tokens: 8000,  // 增加到8000以支持详细策划案
     }),
   })
 
@@ -104,12 +104,13 @@ export async function GET(
         // ================================================
         // Step 2: 检查是否已有缓存策略 (情况A)
         // ================================================
-        if (audit.strategy_text) {
+        if (audit.strategy_section && audit.execution_calendar) {
           console.log(`[SSE] ✅ Cache hit - returning existing strategy`)
 
           clearInterval(heartbeat)
           sendEvent('complete', {
-            strategy_text: audit.strategy_text,
+            strategy_section: audit.strategy_section,
+            execution_calendar: audit.execution_calendar,
             cached: true,
             generation_time_ms: 0
           })
@@ -151,22 +152,34 @@ export async function GET(
           return
         }
 
-        const promptText = generateTextStrategyPrompt(
-          profileSnapshot,
-          diagnosisCard,
+        const promptText = generateStrategyPrompt(
+          { profile_snapshot: profileSnapshot, diagnosis_card: diagnosisCard },
           rawBio
         )
 
         sendEvent('status', { phase: 'generating_strategy', progress: 30 })
 
         // 🔥 关键: SSE连接保持进程存活,AI可以安全执行
-        const strategyText = await callGemini(
+        const aiResponse = await callGemini(
           promptText,
-          STRATEGIC_DIRECTOR_TEXT_PROMPT
+          STRATEGIC_DIRECTOR_SYSTEM_PROMPT
         )
 
-        console.log(`[Strategy] 生成成功, 字数:`, strategyText.length)
-        console.log(`[Strategy] 内容预览:`, strategyText.substring(0, 200))
+        console.log(`[Strategy] AI 响应长度:`, aiResponse.length)
+        console.log(`[Strategy] 响应预览:`, aiResponse.substring(0, 200))
+
+        // 解析 JSON
+        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/)
+        if (!jsonMatch) {
+          throw new Error('AI返回格式错误,无法解析JSON')
+        }
+
+        const strategyData = JSON.parse(jsonMatch[0])
+
+        // 验证必要字段
+        if (!strategyData.strategy_section || !strategyData.execution_calendar) {
+          throw new Error('AI返回数据缺少必要字段')
+        }
 
         // 更新进度
         sendEvent('status', { phase: 'finalizing', progress: 80 })
@@ -179,7 +192,8 @@ export async function GET(
         await supabaseAdmin
           .from('audits')
           .update({
-            strategy_text: strategyText,  // 保存纯文本策划案
+            strategy_section: strategyData.strategy_section,
+            execution_calendar: strategyData.execution_calendar,
             status: 'completed',
             progress: 100,
             ai_model_used: 'gpt-5.1',
@@ -192,12 +206,13 @@ export async function GET(
         // ================================================
         clearInterval(heartbeat)
         sendEvent('complete', {
-          strategy_text: strategyText,
+          strategy_section: strategyData.strategy_section,
+          execution_calendar: strategyData.execution_calendar,
           cached: false,
           generation_time_ms: generationTime
         })
 
-        console.log(`[SSE] ✅ Strategy completed in ${generationTime}ms, 字数: ${strategyText.length}`)
+        console.log(`[SSE] ✅ Strategy completed in ${generationTime}ms`)
         controller.close()
 
       } catch (error: any) {

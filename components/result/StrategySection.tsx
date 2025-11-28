@@ -6,8 +6,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { FullStrategyPlan } from './FullStrategyPlan'
-import { TextStrategyDisplay } from './TextStrategyDisplay'
 
 interface StrategyData {
   strategy_text?: string  // 纯文本策划案(最新格式)
@@ -125,17 +123,6 @@ export function StrategySection({ auditId, onDataLoaded }: StrategySectionProps)
   }
 
   // 渲染策略内容
-  // 纯文本格式策划案
-  if (strategy.strategy_text) {
-    return <TextStrategyDisplay text={strategy.strategy_text} />
-  }
-
-  // 旧格式: 简化版策略(向后兼容)
-  if (strategy.strategy_plan) {
-    return <FullStrategyPlan plan={strategy.strategy_plan} />
-  }
-
-  // 最旧格式: 简化版策略
   return (
     <div className="space-y-8">
       {/* 品牌人设 */}
