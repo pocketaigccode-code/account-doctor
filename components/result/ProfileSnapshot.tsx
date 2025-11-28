@@ -41,18 +41,17 @@ export function ProfileSnapshot({ data }: ProfileSnapshotProps) {
   const displayHandle = data.username || data.handle || ''
   const hasAIEnhancement = data.category_label !== undefined && data.missing_elements !== undefined
 
+  // 预处理图片URL - 只计算一次
+  const avatarProxyUrl = data.avatar_url ? `/api/image-proxy?url=${encodeURIComponent(data.avatar_url)}` : null
+  const postsWithProxyUrls = data.recent_posts_preview?.map(post => ({
+    ...post,
+    proxyUrl: post.thumbnail_url ? `/api/image-proxy?url=${encodeURIComponent(post.thumbnail_url)}` : null
+  }))
+
   // 调试日志
   console.log('[ProfileSnapshot] 头像URL:', data.avatar_url)
-  console.log('[ProfileSnapshot] 帖子预览:', data.recent_posts_preview)
-
-  // 图片代理函数:将Instagram URL转换为代理URL
-  const getProxyImageUrl = (url: string) => {
-    if (!url) return null
-    // 使用代理API绕过CORS限制
-    const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(url)}`
-    console.log('[getProxyImageUrl] 输入:', url, '代理URL:', proxyUrl)
-    return proxyUrl
-  }
+  console.log('[ProfileSnapshot] 头像代理URL:', avatarProxyUrl)
+  console.log('[ProfileSnapshot] 帖子数量:', data.recent_posts_preview?.length)
 
   const getActivityStyle = (status: string) => {
     switch (status) {
@@ -97,9 +96,9 @@ export function ProfileSnapshot({ data }: ProfileSnapshotProps) {
         {/* 左: 身份锚点 */}
         <div className="flex items-start gap-4">
           <div className="relative flex-shrink-0">
-            {data.avatar_url && getProxyImageUrl(data.avatar_url) ? (
+            {avatarProxyUrl ? (
               <img
-                src={getProxyImageUrl(data.avatar_url) as string}
+                src={avatarProxyUrl}
                 alt={data.full_name}
                 className="w-20 h-20 rounded-full border-2 border-sand-200 object-cover bg-sand-100"
                 onError={(e) => {
@@ -110,7 +109,7 @@ export function ProfileSnapshot({ data }: ProfileSnapshotProps) {
                 }}
               />
             ) : null}
-            <div className={`w-20 h-20 rounded-full border-2 border-sand-200 bg-sand-100 flex items-center justify-center ${data.avatar_url && getProxyImageUrl(data.avatar_url) ? 'hidden' : ''}`}>
+            <div className={`w-20 h-20 rounded-full border-2 border-sand-200 bg-sand-100 flex items-center justify-center ${avatarProxyUrl ? 'hidden' : ''}`}>
               <span className="font-serif text-2xl font-bold text-charcoal-600">
                 {data.full_name.charAt(0).toUpperCase()}
               </span>
@@ -144,15 +143,15 @@ export function ProfileSnapshot({ data }: ProfileSnapshotProps) {
 
         {/* 中: 账号统计数据 */}
         <div className="space-y-3">
-          <div className="grid grid-cols-3 gap-4 bg-sand-50 border border-sand-200 p-4">
+          <div className="grid grid-cols-3 gap-3 bg-sand-50 border border-sand-200 p-4">
             <div className="text-center">
-              <p className="font-serif text-2xl font-bold text-charcoal-900">
+              <p className="font-serif text-xl font-bold text-charcoal-900 break-words">
                 {data.post_count !== undefined ? data.post_count.toLocaleString() : '-'}
               </p>
               <p className="font-sans text-xs text-charcoal-600 mt-1">帖子</p>
             </div>
-            <div className="text-center border-l border-r border-sand-200">
-              <p className="font-serif text-2xl font-bold text-charcoal-900">
+            <div className="text-center border-l border-r border-sand-200 px-2">
+              <p className="font-serif text-xl font-bold text-charcoal-900 break-words">
                 {data.follower_count !== undefined ? (data.follower_count >= 1000000
                   ? `${(data.follower_count / 1000000).toFixed(1)}M`
                   : data.follower_count >= 1000
@@ -163,7 +162,7 @@ export function ProfileSnapshot({ data }: ProfileSnapshotProps) {
               <p className="font-sans text-xs text-charcoal-600 mt-1">粉丝</p>
             </div>
             <div className="text-center">
-              <p className="font-serif text-2xl font-bold text-charcoal-900">
+              <p className="font-serif text-xl font-bold text-charcoal-900 break-words">
                 {data.following_count !== undefined ? data.following_count.toLocaleString() : '-'}
               </p>
               <p className="font-sans text-xs text-charcoal-600 mt-1">关注</p>
@@ -239,14 +238,14 @@ export function ProfileSnapshot({ data }: ProfileSnapshotProps) {
             Recent Content (Visual Footprint)
           </p>
           <div className="grid grid-cols-5 gap-3">
-            {data.recent_posts_preview.map((post, i) => (
+            {postsWithProxyUrls?.map((post, i) => (
               <div
                 key={i}
                 className="relative aspect-square bg-sand-100 border border-sand-200 group overflow-hidden"
               >
-                {post.thumbnail_url && getProxyImageUrl(post.thumbnail_url) ? (
+                {post.proxyUrl ? (
                   <img
-                    src={getProxyImageUrl(post.thumbnail_url) as string}
+                    src={post.proxyUrl}
                     alt={`Post ${i + 1}`}
                     className="w-full h-full object-cover"
                     onError={(e) => {
@@ -254,8 +253,7 @@ export function ProfileSnapshot({ data }: ProfileSnapshotProps) {
                       e.currentTarget.style.display = 'none'
                     }}
                   />
-                ) : null}
-                {(!post.thumbnail_url || !getProxyImageUrl(post.thumbnail_url)) && (
+                ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <svg className="w-8 h-8 text-charcoal-600 opacity-20" fill="none" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
