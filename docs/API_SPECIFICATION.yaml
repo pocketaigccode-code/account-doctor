@@ -1,0 +1,417 @@
+openapi: 3.0.3
+info:
+  title: AccountDoctor API
+  description: Instagram账号诊断与策略生成API - 双速响应架构
+  version: 1.0.0
+  contact:
+    name: AccountDoctor Team
+
+servers:
+  - url: http://localhost:8173/api
+    description: 本地开发环境
+  - url: https://accountdoctor.com/api
+    description: 生产环境
+
+tags:
+  - name: Fast Lane
+    description: 毫秒级响应 - 数据解析与基础诊断
+  - name: Slow Lane
+    description: 异步响应 - AI策略生成
+  - name: Image
+    description: 图片生成 (预留)
+
+paths:
+  # ============================================
+  # Fast Lane API
+  # ============================================
+  /audit/init:
+    post:
+      tags:
+        - Fast Lane
+      summary: 初始化账号诊断 (Fast Lane)
+      description: |
+        接收Instagram用户名,返回Profile Snapshot和基础诊断。
+        - 优先返回24小时缓存
+        - Apify数据解析为标准格式
+        - 触发后台AI任务
+      operationId: initAudit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+              properties:
+                username:
+                  type: string
+                  description: Instagram用户名 (不含@符号)
+                  example: "zongzi_coffee"
+                skip_cache:
+                  type: boolean
+                  description: 是否跳过缓存,强制重新抓取
+                  default: false
+      responses:
+        '200':
+          description: 成功返回快照数据
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditInitResponse'
+        '404':
+          description: 账号不存在或私密
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notFound:
+                  value:
+                    error: "PROFILE_NOT_FOUND"
+                    message: "This account doesn't exist or is private"
+                    ui_message: "抱歉,该账号不存在或已设为私密"
+        '429':
+          description: 请求频率超限
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitError'
+
+  # ============================================
+  # Slow Lane API
+  # ============================================
+  /audit/{auditId}/strategy:
+    get:
+      tags:
+        - Slow Lane
+      summary: 获取AI策略 (SSE流式)
+      description: |
+        通过Server-Sent Events流式推送AI生成进度。
+        前端建立EventSource连接,接收实时状态更新。
+      operationId: getStrategy
+      parameters:
+        - name: auditId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: SSE流式响应
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              examples:
+                statusEvent:
+                  value: |
+                    event: status
+                    data: {"phase": "analyzing", "progress": 10}
+
+                    event: status
+                    data: {"phase": "generating_persona", "progress": 30}
+
+                    event: complete
+                    data: {"strategy_section": {...}, "execution_calendar": {...}}
+
+  /audit/{auditId}/status:
+    get:
+      tags:
+        - Slow Lane
+      summary: 轮询获取状态 (Polling备用)
+      description: 如果浏览器不支持SSE,使用此接口轮询
+      operationId: getAuditStatus
+      parameters:
+        - name: auditId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 当前状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditStatusResponse'
+
+  # ============================================
+  # Image Generation (预留)
+  # ============================================
+  /audit/{auditId}/generate-image:
+    post:
+      tags:
+        - Image
+      summary: 生成Day 1图片
+      operationId: generateImage
+      parameters:
+        - name: auditId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prompt:
+                  type: string
+                  description: 英文生图提示词
+                style:
+                  type: string
+                  enum: [warm_professional, modern_minimal, vibrant_playful]
+                logo_overlay:
+                  type: boolean
+                  default: true
+      responses:
+        '200':
+          description: 图片生成成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  image_url:
+                    type: string
+                    format: uri
+                  thumbnail_url:
+                    type: string
+                    format: uri
+                  status:
+                    type: string
+                    enum: [completed, processing]
+
+# ============================================
+# Components
+# ============================================
+components:
+  schemas:
+    AuditInitResponse:
+      type: object
+      properties:
+        audit_id:
+          type: string
+          format: uuid
+          example: "3fd20251-1894-4839-8416-f55d039e21ac"
+        status:
+          type: string
+          enum: [snapshot_ready, analyzing, completed]
+          example: "snapshot_ready"
+        profile_snapshot:
+          $ref: '#/components/schemas/ProfileSnapshot'
+        diagnosis_card:
+          $ref: '#/components/schemas/DiagnosisCard'
+        created_at:
+          type: string
+          format: date-time
+        cache_hit:
+          type: boolean
+          description: 是否从缓存返回
+        expires_at:
+          type: string
+          format: date-time
+          description: 缓存过期时间
+
+    ProfileSnapshot:
+      type: object
+      properties:
+        profile_snapshot:
+          type: object
+          properties:
+            handle:
+              type: string
+              example: "@zongzi_coffee"
+            full_name:
+              type: string
+              example: "Zongzi Best Coffee"
+            avatar_url:
+              type: string
+              format: uri
+            is_verified:
+              type: boolean
+            followers_display:
+              type: string
+              example: "1.2K"
+            activity_status:
+              type: string
+              enum: [Active, Dormant, Inactive]
+            last_post_date:
+              type: string
+              format: date
+              example: "2025-01-26"
+            avg_likes:
+              type: integer
+              example: 128
+            category_label:
+              type: string
+              example: "Coffee Shop"
+            missing_elements:
+              type: array
+              items:
+                type: string
+              example: ["Website", "Location"]
+
+    DiagnosisCard:
+      type: object
+      properties:
+        diagnosis_card:
+          type: object
+          properties:
+            score:
+              type: integer
+              minimum: 0
+              maximum: 100
+              example: 64
+            summary_title:
+              type: string
+              example: "Great Foundation, Missed Opportunities"
+            key_issues:
+              type: array
+              maxItems: 3
+              items:
+                type: string
+              example:
+                - "Bio is missing location info"
+                - "Not using local hashtags"
+                - "Visual style is inconsistent"
+
+    StrategyBlueprint:
+      type: object
+      properties:
+        strategy_section:
+          type: object
+          properties:
+            brand_persona:
+              type: object
+              properties:
+                archetype:
+                  type: string
+                  example: "The Friendly Neighbor"
+                one_liner_bio:
+                  type: string
+                  example: "Seattle's coziest coffee corner ☕ | Locally roasted | Open 7am-6pm"
+                tone_voice:
+                  type: string
+                  example: "Warm, welcoming, authentic"
+            target_audience:
+              type: array
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    enum: [Main, Secondary]
+                  description:
+                    type: string
+                  pain_point:
+                    type: string
+            content_mix_chart:
+              type: array
+              items:
+                type: object
+                properties:
+                  label:
+                    type: string
+                  percentage:
+                    type: integer
+        execution_calendar:
+          type: object
+          properties:
+            day_1_detail:
+              type: object
+              properties:
+                title:
+                  type: string
+                caption:
+                  type: string
+                hashtags:
+                  type: array
+                  items:
+                    type: string
+                image_gen_prompt:
+                  type: string
+                  description: 英文高质量生图提示词
+            month_plan:
+              type: array
+              maxItems: 29
+              items:
+                type: object
+                properties:
+                  day:
+                    type: integer
+                    minimum: 2
+                    maximum: 30
+                  theme:
+                    type: string
+                  idea:
+                    type: string
+
+    AuditStatusResponse:
+      type: object
+      properties:
+        audit_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, snapshot_ready, analyzing, completed, failed]
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: 整体进度百分比
+        current_phase:
+          type: string
+          example: "generating_calendar"
+        result:
+          $ref: '#/components/schemas/StrategyBlueprint'
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          enum:
+            - PROFILE_NOT_FOUND
+            - PROFILE_PRIVATE
+            - APIFY_TIMEOUT
+            - APIFY_RATE_LIMIT
+            - AI_TIMEOUT
+            - AI_PARSE_ERROR
+            - DATABASE_ERROR
+        message:
+          type: string
+          description: 英文错误信息(开发用)
+        ui_message:
+          type: string
+          description: 中文用户友好提示
+
+    RateLimitError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "RATE_LIMIT_EXCEEDED"
+        retry_after:
+          type: integer
+          description: 建议等待秒数
+          example: 60
+        message:
+          type: string
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: 用户认证Token (付费功能需要)

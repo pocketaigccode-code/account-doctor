@@ -12,6 +12,7 @@ export interface InstagramProfile {
   isVerified: boolean
   isBusinessAccount: boolean
   externalUrl?: string
+  businessCategoryName?: string | null  // ⭐ 新增: 行业类型
 }
 
 export interface InstagramPost {
@@ -22,6 +23,8 @@ export interface InstagramPost {
   commentCount: number
   publishedAt: Date
   type: 'image' | 'video' | 'carousel'
+  hashtags?: string[]        // ⭐ 新增: 标签数组
+  locationName?: string | null  // ⭐ 新增: 地理位置
 }
 
 export interface InstagramScanData {

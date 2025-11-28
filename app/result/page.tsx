@@ -73,10 +73,10 @@ function ResultPageContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F5F5F7] flex items-center justify-center">
+      <div className="min-h-screen bg-sand-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-3 border-[#E5E7EB] border-t-[#8B5CF6] rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="text-[13px] text-[#6B7280]">加载中...</p>
+          <div className="w-12 h-12 border-3 border-sand-200 border-t-charcoal-900 rounded-full animate-spin mx-auto mb-3"></div>
+          <p className="font-sans text-sm text-charcoal-600">加载中...</p>
         </div>
       </div>
     )
@@ -84,18 +84,18 @@ function ResultPageContent() {
 
   if (error || !report) {
     return (
-      <div className="min-h-screen bg-[#F5F5F7] flex items-center justify-center p-4">
-        <div className="bg-white rounded-[16px] p-10 border border-[#E5E7EB] max-w-md text-center">
-          <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-7 h-7 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+      <div className="min-h-screen bg-sand-50 flex items-center justify-center p-4">
+        <div className="bg-white border border-sand-200 p-10 max-w-md text-center shadow-sm">
+          <div className="w-14 h-14 bg-terracotta-light border border-terracotta flex items-center justify-center mx-auto mb-4">
+            <svg className="w-7 h-7 text-terracotta" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
-          <h2 className="text-[20px] font-semibold text-[#1F2937] mb-2">无法加载报告</h2>
-          <p className="text-[13px] text-[#6B7280] mb-6">{error}</p>
+          <h2 className="font-serif text-2xl font-bold text-charcoal-900 mb-2">无法加载报告</h2>
+          <p className="font-sans text-sm text-charcoal-600 mb-6">{error}</p>
           <button
             onClick={() => (window.location.href = '/')}
-            className="bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white font-medium py-2.5 px-6 rounded-[12px] hover:scale-[1.02] transition-all text-[13px]"
+            className="bg-charcoal-900 text-white font-sans font-semibold py-3 px-6 hover:bg-charcoal-800 transition-colors"
           >
             返回首页
           </button>
@@ -113,219 +113,256 @@ function ResultPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7]">
+    <div className="min-h-screen bg-sand-50">
       {/* Navigation */}
-      <nav className="bg-white border-b border-[#E5E7EB]">
-        <div className="max-w-5xl mx-auto px-6 py-3.5 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-[#1F2937] rounded-[10px] flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div>
-              <span className="text-[#1F2937] font-semibold text-[15px]">AccountDoctor</span>
-              <p className="text-[11px] text-[#9CA3AF] leading-none">@{report.username}</p>
-            </div>
-          </div>
+      <nav className="bg-white/80 backdrop-blur-sm border-b border-sand-200">
+        <div className="max-w-5xl mx-auto px-8 py-5 flex justify-between items-center">
+          <h1 className="font-serif text-charcoal-900 text-xl font-bold">AccountDoctor</h1>
           <button
             onClick={() => (window.location.href = '/')}
-            className="text-[#6B7280] hover:text-[#1F2937] text-[13px] font-medium flex items-center gap-1.5 transition-colors"
+            className="text-charcoal-600 hover:text-charcoal-900 text-sm font-sans font-medium transition-colors"
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            返回
+            返回首页
           </button>
         </div>
       </nav>
 
       {/* Main */}
-      <main className="max-w-5xl mx-auto px-6 py-8">
-        {/* Score */}
-        <div className="bg-white rounded-[16px] p-8 mb-4 border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-[24px] font-semibold text-[#1F2937]">健康度评分</h2>
-            <div className="bg-[#E9D5FF] text-[#7C3AED] px-4 py-1.5 rounded-full text-[13px] font-medium">
-              {report.scoreBreakdown.grade}
-            </div>
-          </div>
+      <main className="max-w-5xl mx-auto px-8 py-12">
+        {/* Section 1: The Diagnosis */}
+        <div className="bg-white border border-sand-200 p-10 mb-8 shadow-sm">
+          <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-8">诊断结果</h2>
 
-          <div className="flex items-center gap-12">
-            {/* Score Circle */}
-            <div className="relative w-36 h-36 flex-shrink-0">
-              <svg className="transform -rotate-90 w-36 h-36">
-                <circle cx="72" cy="72" r="66" stroke="#E5E7EB" strokeWidth="10" fill="none" />
-                <circle
-                  cx="72"
-                  cy="72"
-                  r="66"
-                  stroke={getScoreColor(score)}
-                  strokeWidth="10"
-                  fill="none"
-                  strokeDasharray={`${2 * Math.PI * 66}`}
-                  strokeDashoffset={`${2 * Math.PI * 66 * (1 - score / 100)}`}
-                  strokeLinecap="round"
-                  className="transition-all duration-1000"
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <div className="text-[44px] font-semibold text-[#1F2937]">{score}</div>
-                <div className="text-[13px] text-[#9CA3AF]">/ 100</div>
+          <div className="flex items-start gap-16">
+            {/* Total Score Circle */}
+            <div className="flex-shrink-0">
+              <div className="relative w-44 h-44">
+                <svg className="transform -rotate-90 w-44 h-44">
+                  <circle cx="88" cy="88" r="80" stroke="#e6e2d6" strokeWidth="12" fill="none" />
+                  <circle
+                    cx="88"
+                    cy="88"
+                    r="80"
+                    stroke={getScoreColor(score)}
+                    strokeWidth="12"
+                    fill="none"
+                    strokeDasharray={`${2 * Math.PI * 80}`}
+                    strokeDashoffset={`${2 * Math.PI * 80 * (1 - score / 100)}`}
+                    strokeLinecap="round"
+                    className="transition-all duration-1000"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <div className="font-serif text-5xl font-bold text-charcoal-900">{score}</div>
+                  <div className="font-sans text-sm text-charcoal-600 mt-1">/ 100</div>
+                </div>
+              </div>
+              <div className="text-center mt-4">
+                <div className="inline-block bg-sand-100 px-4 py-1.5 border border-sand-200">
+                  <span className="font-sans text-sm font-semibold text-charcoal-900">{report.scoreBreakdown.grade}</span>
+                </div>
               </div>
             </div>
 
-            {/* Dimensions */}
-            <div className="flex-1 grid grid-cols-5 gap-4">
-              <Dimension label="内容" score={report.scoreBreakdown.content_quality} max={30} />
-              <Dimension label="互动" score={report.scoreBreakdown.engagement_health} max={25} />
-              <Dimension label="活力" score={report.scoreBreakdown.account_vitality} max={20} />
-              <Dimension label="增长" score={report.scoreBreakdown.growth_potential} max={15} />
-              <Dimension label="受众" score={report.scoreBreakdown.audience_match} max={10} />
+            {/* Critical Issues */}
+            <div className="flex-1">
+              <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-4">关键问题</h3>
+              <div className="space-y-3">
+                {report.improvements.issues.slice(0, 3).map((issue, index) => (
+                  <div key={index} className="flex gap-3 items-start bg-sand-50 border border-sand-200 p-3">
+                    <div className="flex-shrink-0 w-6 h-6 bg-terracotta text-white flex items-center justify-center font-sans text-xs font-bold">
+                      {index + 1}
+                    </div>
+                    <p className="font-sans text-sm text-charcoal-800 leading-relaxed flex-1">{issue}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Urgent Action */}
+              <div className="mt-6 bg-terracotta-light border-l-4 border-terracotta p-5">
+                <h4 className="font-sans text-sm font-bold text-charcoal-900 mb-2">最紧急</h4>
+                <p className="font-sans text-sm text-charcoal-800 leading-relaxed">{report.improvements.urgent_action}</p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Improvements */}
-        <div className="bg-white rounded-[16px] p-6 mb-4 border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-          <h3 className="text-[18px] font-medium text-[#1F2937] mb-4">改进建议</h3>
-          <div className="space-y-3 mb-4">
-            {report.improvements.issues.map((issue, index) => (
-              <div key={index} className="flex gap-3 p-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-[8px]">
-                <div className="w-6 h-6 bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white rounded-[6px] flex items-center justify-center font-medium text-[12px] flex-shrink-0">
-                  {index + 1}
+        {/* Section 2: Growth Strategy (Content Mix) */}
+        <div className="bg-white border border-sand-200 p-10 mb-8 shadow-sm">
+          <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">定制增长策略</h2>
+
+          <div className="space-y-6">
+            <div>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-sans text-base font-bold text-charcoal-900">产品展示</h3>
+                <span className="font-sans text-sm text-charcoal-600">40%</span>
+              </div>
+              <div className="w-full bg-sand-100 h-3">
+                <div className="bg-sage h-3" style={{ width: '40%' }}></div>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-sans text-base font-bold text-charcoal-900">生活方式</h3>
+                <span className="font-sans text-sm text-charcoal-600">30%</span>
+              </div>
+              <div className="w-full bg-sand-100 h-3">
+                <div className="bg-sage h-3" style={{ width: '30%' }}></div>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-sans text-base font-bold text-charcoal-900">用户生成内容</h3>
+                <span className="font-sans text-sm text-charcoal-600">20%</span>
+              </div>
+              <div className="w-full bg-sand-100 h-3">
+                <div className="bg-sage h-3" style={{ width: '20%' }}></div>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-sans text-base font-bold text-charcoal-900">教育内容</h3>
+                <span className="font-sans text-sm text-charcoal-600">10%</span>
+              </div>
+              <div className="w-full bg-sand-100 h-3">
+                <div className="bg-sage h-3" style={{ width: '10%' }}></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 bg-sand-50 border border-sand-200 p-6">
+            <h4 className="font-sans text-sm font-bold text-charcoal-900 mb-3">策略分析</h4>
+            <p className="font-sans text-sm text-charcoal-800 leading-relaxed">
+              建议增加生活方式内容至30%,以提升受众情感连接。保持产品展示为核心(40%),同时融入20%的用户生成内容以增强社会证明。定期发布教育性内容(10%)建立品牌专业度。
+            </p>
+          </div>
+        </div>
+
+        {/* Section 3: Content Preview */}
+        <div className="bg-white border border-sand-200 p-10 mb-8 shadow-sm">
+          <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">内容预览与分析</h2>
+
+          <div className="grid md:grid-cols-2 gap-10">
+            {/* Left: Image Preview */}
+            <div>
+              <div className="relative aspect-square bg-gradient-to-br from-sand-100 to-sand-200 border border-sand-200 flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <svg className="w-24 h-24 text-charcoal-600 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
                 </div>
-                <p className="text-[13px] text-[#374151] leading-relaxed">{issue}</p>
+                <div className="relative z-10 bg-white border-2 border-charcoal-900 px-6 py-3">
+                  <span className="font-serif text-xl font-bold text-charcoal-900">LOGO</span>
+                </div>
+              </div>
+              <div className="mt-4 bg-sand-50 border border-sand-200 p-4">
+                <h4 className="font-sans text-xs font-bold text-charcoal-900 mb-2">图片建议</h4>
+                <p className="font-sans text-sm text-charcoal-800 leading-relaxed">{report.day1Content.image_suggestion}</p>
+              </div>
+            </div>
+
+            {/* Right: Caption & Analysis */}
+            <div className="space-y-6">
+              <div>
+                <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-3">生成文案</h3>
+                <div className="bg-sand-50 border border-sand-200 p-5">
+                  <p className="font-sans text-sm text-charcoal-900 leading-relaxed whitespace-pre-wrap">
+                    {report.day1Content.caption}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-3">推荐标签</h3>
+                <div className="flex flex-wrap gap-2">
+                  {report.day1Content.hashtags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="bg-sand-100 border border-sand-200 px-3 py-1.5 font-sans text-xs text-charcoal-900"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-sage/10 border-l-4 border-sage p-5">
+                <h4 className="font-sans text-sm font-bold text-charcoal-900 mb-2">AI 分析</h4>
+                <p className="font-sans text-sm text-charcoal-800 leading-relaxed">
+                  这篇内容融合了情感共鸣和产品展示,通过生活化场景降低商业感。发布时间建议在 {report.day1Content.best_time},此时段受众活跃度最高,预计互动率提升 25-40%。
+                </p>
+              </div>
+
+              <div className="bg-sand-50 border border-sand-200 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <svg className="w-4 h-4 text-sage" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                  </svg>
+                  <h4 className="font-sans text-xs font-bold text-charcoal-900">最佳发布时间</h4>
+                </div>
+                <p className="font-sans text-base font-bold text-charcoal-900">{report.day1Content.best_time}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 4: Smart Calendar */}
+        <div className="bg-white border border-sand-200 p-10 mb-8 shadow-sm">
+          <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">智能内容日历</h2>
+
+          {/* 7-Day Calendar Grid */}
+          <div className="grid grid-cols-7 gap-4 mb-8">
+            {/* Day 1 - Ready to Post */}
+            <div className="border-2 border-sage p-4 bg-white">
+              <div className="font-sans text-xs font-bold text-charcoal-900 mb-2">第 1 天</div>
+              <div className="aspect-square bg-sand-100 mb-2 flex items-center justify-center">
+                <svg className="w-8 h-8 text-charcoal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <h4 className="font-sans text-xs font-semibold text-charcoal-900 mb-1">准备发布</h4>
+              <p className="font-sans text-xs text-charcoal-600 line-clamp-2">{report.day1Content.caption.substring(0, 40)}...</p>
+            </div>
+
+            {/* Day 2-7 - Planned */}
+            {[2, 3, 4, 5, 6, 7].map((day) => (
+              <div key={day} className="border border-sand-200 p-4 bg-sand-50 opacity-60">
+                <div className="font-sans text-xs font-bold text-charcoal-600 mb-2">第 {day} 天</div>
+                <div className="aspect-square bg-sand-200 mb-2 blur-sm"></div>
+                <h4 className="font-sans text-xs font-semibold text-charcoal-600 mb-1">已规划</h4>
+                <div className="space-y-1">
+                  <div className="h-2 bg-sand-200 blur-sm"></div>
+                  <div className="h-2 bg-sand-200 blur-sm w-3/4"></div>
+                </div>
               </div>
             ))}
           </div>
 
-          <div className="bg-red-50 border border-red-200 rounded-[8px] p-4">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-red-500 rounded-[8px] flex items-center justify-center flex-shrink-0">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
+          {/* 14-30 Days Preview */}
+          <div className="grid grid-cols-7 gap-4 mb-8">
+            {Array.from({ length: 7 }, (_, i) => i + 8).map((day) => (
+              <div key={day} className="border border-sand-200 p-3 bg-sand-50 opacity-40">
+                <div className="font-sans text-xs text-charcoal-600 mb-2">第 {day} 天</div>
+                <div className="aspect-square bg-sand-200 blur-md"></div>
               </div>
-              <div>
-                <h4 className="text-[14px] font-medium text-red-900 mb-1">最紧急</h4>
-                <p className="text-[13px] text-red-700 leading-relaxed">{report.improvements.urgent_action}</p>
-              </div>
-            </div>
+            ))}
           </div>
-        </div>
 
-        {/* Day 1 */}
-        <div className="bg-white rounded-[16px] p-6 mb-4 border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-          <h3 className="text-[18px] font-medium text-[#1F2937] mb-4">AI生成的首日内容</h3>
-
-          <div className="mb-4 p-5 bg-[#E9D5FF]/20 rounded-[12px] border border-[#E9D5FF]">
-            <h4 className="text-[13px] font-medium text-[#374151] mb-2">文案</h4>
-            <p className="text-[14px] text-[#1F2937] leading-relaxed whitespace-pre-wrap">
-              {report.day1Content.caption}
+          {/* CTA Overlay */}
+          <div className="bg-sand-100 border-2 border-charcoal-900 p-8 text-center">
+            <h3 className="font-serif text-2xl font-bold text-charcoal-900 mb-3">解锁完整 30 天计划</h3>
+            <p className="font-sans text-sm text-charcoal-600 mb-6 max-w-md mx-auto">
+              获取完整的内容日历,包括每日发布建议、最佳时间和专业文案
             </p>
+            <button className="bg-charcoal-900 text-white font-sans font-semibold py-3 px-8 hover:bg-charcoal-800 transition-colors">
+              免费注册解锁
+            </button>
           </div>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="p-4 bg-[#F9FAFB] rounded-[12px] border border-[#E5E7EB]">
-              <h4 className="text-[13px] font-medium text-[#374151] mb-3">标签</h4>
-              <div className="flex flex-wrap gap-1.5">
-                {report.day1Content.hashtags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="bg-[#E9D5FF] text-[#7C3AED] px-3 py-1 rounded-full text-[12px] font-medium hover:bg-[#7C3AED] hover:text-white transition-colors cursor-pointer"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="p-4 bg-[#F9FAFB] rounded-[12px] border border-[#E5E7EB]">
-                <h4 className="text-[13px] font-medium text-[#374151] mb-2">图片建议</h4>
-                <p className="text-[12px] text-[#6B7280] leading-relaxed">{report.day1Content.image_suggestion}</p>
-              </div>
-
-              <div className="p-4 bg-[#E9D5FF]/20 rounded-[12px] border border-[#E9D5FF]">
-                <h4 className="text-[13px] font-medium text-[#374151] mb-1.5">最佳发布时间</h4>
-                <p className="text-[14px] text-[#7C3AED] font-medium">{report.day1Content.best_time}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* CTA */}
-        <div className="bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] rounded-[16px] p-8 text-center shadow-[0_4px_16px_rgba(139,92,246,0.2)]">
-          <div className="w-12 h-12 bg-white/20 rounded-[12px] flex items-center justify-center mx-auto mb-4">
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </div>
-
-          <h3 className="text-[22px] font-semibold text-white mb-2">解锁完整30天内容日历</h3>
-          <p className="text-[14px] text-white/90 mb-6 max-w-md mx-auto">
-            获取AI规划的完整内容策略、专业文案和图片建议
-          </p>
-
-          <div className="flex justify-center gap-5 mb-6 text-[12px] text-white/80">
-            <span className="flex items-center gap-1.5">
-              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              30天规划
-            </span>
-            <span className="flex items-center gap-1.5">
-              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              AI图片
-            </span>
-            <span className="flex items-center gap-1.5">
-              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              文案库
-            </span>
-          </div>
-
-          <button className="bg-white text-[#7C3AED] font-medium py-2.5 px-6 rounded-[12px] hover:scale-[1.02] transition-all text-[14px] shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
-            免费注册解锁
-          </button>
-
-          <p className="text-[11px] text-white/70 mt-3">无需信用卡</p>
         </div>
       </main>
-    </div>
-  )
-}
-
-function Dimension({ label, score, max }: { label: string; score: number; max: number }) {
-  const pct = (score / max) * 100
-  return (
-    <div className="text-center">
-      <div className="text-[11px] text-[#9CA3AF] mb-2">{label}</div>
-      <div className="relative w-16 h-16 mx-auto mb-1.5">
-        <svg className="transform -rotate-90 w-16 h-16">
-          <circle cx="32" cy="32" r="28" stroke="#E5E7EB" strokeWidth="5" fill="none" />
-          <circle
-            cx="32"
-            cy="32"
-            r="28"
-            stroke="#8B5CF6"
-            strokeWidth="5"
-            fill="none"
-            strokeDasharray={`${2 * Math.PI * 28}`}
-            strokeDashoffset={`${2 * Math.PI * 28 * (1 - pct / 100)}`}
-            strokeLinecap="round"
-            className="transition-all duration-1000"
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-[16px] font-semibold text-[#1F2937]">{score}</div>
-        </div>
-      </div>
-      <div className="text-[10px] text-[#9CA3AF]">/{max}</div>
     </div>
   )
 }
@@ -333,10 +370,10 @@ function Dimension({ label, score, max }: { label: string; score: number; max: n
 export default function ResultPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#F5F5F7] flex items-center justify-center">
+      <div className="min-h-screen bg-sand-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-3 border-[#E5E7EB] border-t-[#8B5CF6] rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="text-[13px] text-[#6B7280]">加载中...</p>
+          <div className="w-12 h-12 border-3 border-sand-200 border-t-charcoal-900 rounded-full animate-spin mx-auto mb-3"></div>
+          <p className="font-sans text-sm text-charcoal-600">加载中...</p>
         </div>
       </div>
     }>
