@@ -17,7 +17,7 @@ async function callGemini(prompt: string, systemPrompt: string): Promise<string>
   const DEERAPI_KEY = process.env.DEER_API_KEY || ''
 
   console.log('[AI Call] 📤 发送请求到 DeerAPI')
-  console.log('[AI Call] 模型:', 'gpt-5.1')
+  console.log('[AI Call] 模型:', 'gpt-4o-2024-08-06')
   console.log('[AI Call] System Prompt 长度:', systemPrompt.length, '字符')
   console.log('[AI Call] User Prompt 长度:', prompt.length, '字符')
   console.log('[AI Call] User Prompt 预览:', prompt.substring(0, 500))
@@ -29,13 +29,13 @@ async function callGemini(prompt: string, systemPrompt: string): Promise<string>
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-5.1',
+      model: 'gpt-4o-2024-08-06',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: prompt }
       ],
       temperature: 0.7,
-      max_tokens: 2000,
+      max_tokens: 4000,
     }),
   })
 
