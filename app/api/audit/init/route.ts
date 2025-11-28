@@ -280,30 +280,27 @@ export async function POST(request: NextRequest) {
       console.log(`[Database] Saved initial data for: ${auditId}`)
 
       // ================================================
-      // Step 4: 触发后台AI增强 (不等待)
+      // Step 4: 等待AI增强完成 (Vercel上必须等待)
       // ================================================
-      // 使用 Promise 立即触发,但不等待结果
-      processAIEnhancement(auditId, scanData).catch(err => {
-        console.error('[Background AI] Error:', err)
-      })
-
-      console.log(`[Background AI] Triggered for: ${auditId}`)
+      console.log(`[AI Enhancement] Starting synchronously for: ${auditId}`)
+      await processAIEnhancement(auditId, scanData)
+      console.log(`[AI Enhancement] Completed for: ${auditId}`)
     }
 
     // ================================================
-    // Step 5: 立即返回即时数据给前端
+    // Step 5: 返回数据给前端
     // ================================================
     const totalTime = Date.now() - startTime
-    console.log(`[Audit Init] ✅ Returned instant data in ${totalTime}ms`)
+    console.log(`[Audit Init] ✅ Returned data in ${totalTime}ms`)
 
     return NextResponse.json({
       audit_id: auditId,
-      status: cacheHit ? 'snapshot_ready' : 'analyzing',  // 新数据标记为analyzing
+      status: 'snapshot_ready',  // AI增强已完成
       instant_data: instantData,
-      has_ai_enhancement: cacheHit,  // 缓存命中的已经有AI数据
+      has_ai_enhancement: true,
       created_at: new Date().toISOString(),
       cache_hit: cacheHit,
-      expires_at: cacheHit ? undefined : getExpiresAt().toISOString(),
+      expires_at: getExpiresAt().toISOString(),
       performance: {
         total_time_ms: totalTime,
         cached: cacheHit
