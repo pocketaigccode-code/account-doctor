@@ -17,6 +17,12 @@ async function callGemini(prompt: string, systemPrompt: string): Promise<string>
   const DEERAPI_BASE_URL = process.env.DEER_API_BASE_URL || 'https://api.deerapi.com'
   const DEERAPI_KEY = process.env.DEER_API_KEY || ''
 
+  console.log('[Strategy AI Call] 📤 发送请求到 DeerAPI')
+  console.log('[Strategy AI Call] 模型:', 'gemini-3-pro-preview')
+  console.log('[Strategy AI Call] System Prompt 长度:', systemPrompt.length, '字符')
+  console.log('[Strategy AI Call] User Prompt 长度:', prompt.length, '字符')
+  console.log('[Strategy AI Call] User Prompt 预览:', prompt.substring(0, 500))
+
   const response = await fetch(`${DEERAPI_BASE_URL}/v1/chat/completions`, {
     method: 'POST',
     headers: {
@@ -35,11 +41,19 @@ async function callGemini(prompt: string, systemPrompt: string): Promise<string>
   })
 
   if (!response.ok) {
+    const errorText = await response.text()
+    console.error('[Strategy AI Call] ❌ DeerAPI 错误:', response.status, errorText)
     throw new Error(`DeerAPI failed: ${response.status}`)
   }
 
   const data = await response.json()
-  return data.choices?.[0]?.message?.content || ''
+  const aiResponse = data.choices?.[0]?.message?.content || ''
+
+  console.log('[Strategy AI Call] 📥 收到响应')
+  console.log('[Strategy AI Call] 响应长度:', aiResponse.length, '字符')
+  console.log('[Strategy AI Call] 响应预览:', aiResponse.substring(0, 500))
+
+  return aiResponse
 }
 
 export async function GET(

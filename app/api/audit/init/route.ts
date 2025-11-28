@@ -16,6 +16,12 @@ async function callGemini(prompt: string, systemPrompt: string): Promise<string>
   const DEERAPI_BASE_URL = process.env.DEER_API_BASE_URL || 'https://api.deerapi.com'
   const DEERAPI_KEY = process.env.DEER_API_KEY || ''
 
+  console.log('[AI Call] 📤 发送请求到 DeerAPI')
+  console.log('[AI Call] 模型:', 'gemini-3-pro-preview')
+  console.log('[AI Call] System Prompt 长度:', systemPrompt.length, '字符')
+  console.log('[AI Call] User Prompt 长度:', prompt.length, '字符')
+  console.log('[AI Call] User Prompt 预览:', prompt.substring(0, 500))
+
   const response = await fetch(`${DEERAPI_BASE_URL}/v1/chat/completions`, {
     method: 'POST',
     headers: {
@@ -34,11 +40,19 @@ async function callGemini(prompt: string, systemPrompt: string): Promise<string>
   })
 
   if (!response.ok) {
+    const errorText = await response.text()
+    console.error('[AI Call] ❌ DeerAPI 错误:', response.status, errorText)
     throw new Error(`DeerAPI调用失败: ${response.status}`)
   }
 
   const data = await response.json()
-  return data.choices?.[0]?.message?.content || ''
+  const aiResponse = data.choices?.[0]?.message?.content || ''
+
+  console.log('[AI Call] 📥 收到响应')
+  console.log('[AI Call] 响应长度:', aiResponse.length, '字符')
+  console.log('[AI Call] 响应预览:', aiResponse.substring(0, 500))
+
+  return aiResponse
 }
 
 /**
@@ -105,6 +119,12 @@ function generateInstantData(scanData: InstagramScanData) {
 async function processAIEnhancement(auditId: string, scanData: InstagramScanData) {
   try {
     console.log(`[AI Enhancement] Starting for audit: ${auditId}`)
+    console.log(`[AI Enhancement] 账号信息:`, {
+      username: scanData.profile.username,
+      followers: scanData.profile.followerCount,
+      posts: scanData.recentPosts.length,
+      lastPost: scanData.recentPosts[0]?.publishedAt
+    })
 
     const prompt = generateAnalystPrompt(scanData)
     const aiResponse = await callGemini(prompt, PROFILE_ANALYST_SYSTEM_PROMPT)
@@ -116,6 +136,14 @@ async function processAIEnhancement(auditId: string, scanData: InstagramScanData
     }
 
     const parsed = JSON.parse(jsonMatch[0])
+
+    console.log('[AI Enhancement] 📊 解析后的数据:', {
+      category: parsed.profile_snapshot?.category_label,
+      missing: parsed.profile_snapshot?.missing_elements,
+      score: parsed.diagnosis_card?.score,
+      summary: parsed.diagnosis_card?.summary_title
+    })
+
     const aiEnhancedData = {
       category_label: parsed.profile_snapshot?.category_label || '未知',
       missing_elements: parsed.profile_snapshot?.missing_elements || [],
@@ -124,6 +152,7 @@ async function processAIEnhancement(auditId: string, scanData: InstagramScanData
 
     // 验证必要字段
     if (!aiEnhancedData.diagnosis_card || !aiEnhancedData.diagnosis_card.score) {
+      console.error('[AI Enhancement] ❌ 数据验证失败:', aiEnhancedData)
       throw new Error('AI返回数据缺少必要字段')
     }
 
