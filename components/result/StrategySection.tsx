@@ -116,6 +116,16 @@ export function StrategySection({ auditId, onDataLoaded, onDay1Loaded, onCalenda
       setProgress(100)
       console.log(`[SSE] Completed - Generation time: ${data.generation_time_ms}ms`)
 
+      // 触发所有回调 (确保Day1和Calendar数据被传递)
+      if (data.execution_calendar?.day_1_detail && onDay1Loaded) {
+        console.log('[SSE Complete] 触发Day1回调')
+        onDay1Loaded(data.execution_calendar.day_1_detail)
+      }
+      if (data.execution_calendar?.month_plan && onCalendarLoaded) {
+        console.log('[SSE Complete] 触发Calendar回调, length:', data.execution_calendar.month_plan.length)
+        onCalendarLoaded(data.execution_calendar.month_plan)
+      }
+
       // 通知父组件数据已加载
       if (onDataLoaded) {
         onDataLoaded(data)
@@ -190,17 +200,17 @@ export function StrategySection({ auditId, onDataLoaded, onDay1Loaded, onCalenda
         </h2>
         <div className="bg-sand-50 border border-sand-200 p-6">
           <h3 className="font-serif text-2xl font-bold text-charcoal-900 mb-3">
-            {strategy.strategy_section?.brand_persona?.archetype || 'The Community Hub'}
+            {strategy.strategy_section?.brand_persona?.archetype}
           </h3>
           <p className="font-sans text-base text-charcoal-800 leading-relaxed mb-4">
-            {strategy.strategy_section?.brand_persona?.tone_voice || '温暖、真诚、接地气'}
+            {strategy.strategy_section?.brand_persona?.tone_voice}
           </p>
           <div className="bg-white border border-sand-200 p-4">
             <p className="font-sans text-xs text-charcoal-600 mb-1 font-semibold">
               优化后的简介:
             </p>
             <p className="font-sans text-sm text-charcoal-900">
-              {strategy.strategy_section?.brand_persona?.one_liner_bio || '你的社区咖啡驿站 ☕'}
+              {strategy.strategy_section?.brand_persona?.one_liner_bio}
             </p>
           </div>
         </div>

@@ -179,20 +179,26 @@ export default function AuditResultPage({ params }: PageProps) {
 
         {/* Day 1内容预览 - 独立模块 (Audience显示后立即显示骨架屏) */}
         {diagnosisData && strategyData?.target_audience && (
-          day1Data ? (
-            <Day1Preview day1={day1Data} />
-          ) : (
-            <Day1Skeleton />
-          )
+          <>
+            {console.log('[Day1渲染] day1Data存在?', !!day1Data, day1Data?.title)}
+            {day1Data ? (
+              <Day1Preview day1={day1Data} />
+            ) : (
+              <Day1Skeleton />
+            )}
+          </>
         )}
 
         {/* 30天日历 - 独立模块 (Day1显示后立即显示骨架屏) */}
         {diagnosisData && day1Data && (
-          calendarData ? (
-            <ExecutionCalendar calendar={{ day_1_detail: day1Data, month_plan: calendarData }} />
-          ) : (
-            <CalendarSkeleton />
-          )
+          <>
+            {console.log('[Calendar渲染] calendarData存在?', !!calendarData, calendarData?.length)}
+            {calendarData ? (
+              <ExecutionCalendar calendar={{ day_1_detail: day1Data, month_plan: calendarData }} />
+            ) : (
+              <CalendarSkeleton />
+            )}
+          </>
         )}
       </main>
     </div>
