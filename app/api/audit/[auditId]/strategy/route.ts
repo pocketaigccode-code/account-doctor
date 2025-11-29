@@ -35,41 +35,56 @@ async function callGemini(
 
   console.log('[AI Call] 📤 发送请求到DeerAPI, max_tokens:', maxTokens)
 
-  const response = await fetch(`${DEERAPI_BASE_URL}/v1/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${DEERAPI_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-5.1',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: prompt }
-      ],
-      temperature: 0.7,
-      max_tokens: maxTokens,
-    }),
-  })
+  // 添加超时控制
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 45000) // 45秒超时
 
-  if (!response.ok) {
-    const errorText = await response.text()
-    console.error('[AI Call] ❌ DeerAPI错误:', response.status, errorText)
-    throw new Error(`DeerAPI failed: ${response.status}`)
+  try {
+    const response = await fetch(`${DEERAPI_BASE_URL}/v1/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${DEERAPI_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-5.1',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.7,
+        max_tokens: maxTokens,
+      }),
+      signal: controller.signal
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('[AI Call] ❌ DeerAPI错误:', response.status, errorText)
+      throw new Error(`DeerAPI failed: ${response.status}`)
+    }
+
+    const data = await response.json()
+    const aiResponse = data.choices?.[0]?.message?.content || ''
+
+    console.log('[AI Call] 📥 收到响应,长度:', aiResponse.length)
+
+    // 🚨 检查空响应
+    if (!aiResponse || aiResponse.trim().length === 0) {
+      console.error('[AI Call] ❌ 收到空响应!完整data:', JSON.stringify(data))
+      throw new Error('AI返回空响应,可能超时或配额耗尽')
+    }
+
+    return aiResponse
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      console.error('[AI Call] ❌ 请求超时 (45秒)')
+      throw new Error('AI request timeout after 45 seconds')
+    }
+    throw error
+  } finally {
+    clearTimeout(timeout)
   }
-
-  const data = await response.json()
-  const aiResponse = data.choices?.[0]?.message?.content || ''
-
-  console.log('[AI Call] 📥 收到响应,长度:', aiResponse.length)
-
-  // 🚨 检查空响应
-  if (!aiResponse || aiResponse.trim().length === 0) {
-    console.error('[AI Call] ❌ 收到空响应!完整data:', JSON.stringify(data))
-    throw new Error('AI返回空响应,可能超时或配额耗尽')
-  }
-
-  return aiResponse
 }
 
 // 解析JSON响应 - 严格清洗
@@ -291,12 +306,18 @@ export async function GET(
             persona: personaData
           }),
           MONTH_PLAN_SYSTEM_PROMPT,
-          2000  // ✅ MonthPlan需要更多tokens (29天计划)
+          3000  // ✅ MonthPlan需要更多tokens (29天计划,每天约100tokens)
         )
         const monthPlanData = parseJSON(monthPlanResponse, 'MonthPlan')
 
         console.log('[Module 5] ✅ Month Plan completed')
         console.log('[Module 5] Month plan length:', monthPlanData?.length)
+
+        // 立即推送月度计划
+        sendEvent('partial_update', {
+          month_plan: monthPlanData,
+          progress: 95
+        })
 
         // ================================================
         // 保存完整结果到数据库
