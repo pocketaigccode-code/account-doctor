@@ -74,39 +74,53 @@ async function callGemini(
 
 // 解析JSON响应 - 严格清洗
 function parseJSON(aiResponse: string, moduleName: string = ''): any {
-  console.log(`[parseJSON ${moduleName}] 原始响应:`, aiResponse.substring(0, 500))
+  console.log(`[parseJSON ${moduleName}] 原始响应长度:`, aiResponse.length)
 
-  // 尝试直接解析(如果AI严格遵守了规则)
+  // 尝试直接解析
   try {
     const trimmed = aiResponse.trim()
     if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
       return JSON.parse(trimmed)
     }
   } catch (e) {
-    console.log(`[parseJSON ${moduleName}] 直接解析失败,尝试提取...`)
+    console.log(`[parseJSON ${moduleName}] 直接解析失败,尝试清洗...`)
   }
 
-  // 提取JSON(处理AI加了额外文本的情况)
+  // 清洗JSON: 移除注释和多余换行
+  let cleaned = aiResponse
+    .replace(/\/\/.*$/gm, '')  // 移除单行注释
+    .replace(/\/\*[\s\S]*?\*\//g, '')  // 移除多行注释
+    .trim()
+
+  // 提取JSON
   let jsonMatch
 
-  // 优先匹配数组
-  jsonMatch = aiResponse.match(/\[[\s\S]*?\](?=\s*$|[\r\n]|```)/m)
-
-  if (!jsonMatch) {
-    // 匹配对象
-    jsonMatch = aiResponse.match(/\{[\s\S]*?\}(?=\s*$|[\r\n]|```)/m)
-  }
-
-  if (!jsonMatch) {
-    console.error(`[parseJSON ${moduleName}] 无法提取JSON,原始响应:`, aiResponse)
+  // 首先尝试找到JSON的开始和结束位置
+  const startIndex = cleaned.indexOf('[') !== -1 ? cleaned.indexOf('[') : cleaned.indexOf('{')
+  if (startIndex === -1) {
+    console.error(`[parseJSON ${moduleName}] 找不到JSON起始符号`)
     throw new Error(`AI返回格式错误,无法解析JSON (模块: ${moduleName})`)
   }
 
+  // 从起始位置提取到最后
+  const jsonStr = cleaned.substring(startIndex)
+
+  console.log(`[parseJSON ${moduleName}] JSON字符串长度:`, jsonStr.length)
+  console.log(`[parseJSON ${moduleName}] JSON前100字符:`, jsonStr.substring(0, 100))
+  console.log(`[parseJSON ${moduleName}] JSON后100字符:`, jsonStr.substring(jsonStr.length - 100))
+
   try {
-    return JSON.parse(jsonMatch[0])
+    return JSON.parse(jsonStr)
   } catch (e: any) {
     console.error(`[parseJSON ${moduleName}] JSON解析失败:`, e.message)
-    console.error(`[parseJSON ${moduleName}] 提取的内容:`, jsonMatch[0])
+    console.error(`[parseJSON ${moduleName}] 错误位置:`, e.message.match(/position (\d+)/)?.[1])
+
+    // 显示错误位置附近的内容
+    const errorPos = parseInt(e.message.match(/position (\d+)/)?.[1] || '0')
+    if (errorPos > 0) {
+      console.error(`[parseJSON ${moduleName}] 错误位置前后:`, jsonStr.substring(Math.max(0, errorPos - 50), errorPos + 50))
+    }
+
     throw new Error(`JSON解析失败: ${e.message}`)
   }
 }

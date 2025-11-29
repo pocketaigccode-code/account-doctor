@@ -183,27 +183,29 @@ Create viral Day 1 post JSON.
 // 依赖: content_mix (需要在Stage 1完成后执行)
 // ==========================================
 
-export const MONTH_PLAN_SYSTEM_PROMPT = `
-Role: Social Media Planner
-Task: Generate content themes for Day 2-30 (29 days)
-Output: JSON Array only
+export const MONTH_PLAN_SYSTEM_PROMPT = `You are a JSON-only API. Return ONLY a valid JSON array.
 
-Format:
-[
-  {
-    "day": 2,
-    "theme": "Short Theme (2-4 words)",
-    "hook": "One-sentence strategy (max 10 words)"
-  },
-  ...
-]
+CRITICAL REQUIREMENTS:
+1. Your response must start with [ and end with ]
+2. NO text before or after the JSON array
+3. NO comments, NO explanations
+4. NO line breaks inside string values
+5. Use double quotes for all strings
+6. Return EXACTLY 29 objects (Day 2 to Day 30)
 
-Rules:
-- CRITICAL: Generate exactly 29 entries (Day 2 to Day 30)
-- Keep "hook" extremely concise and actionable
-- Distribute content types based on mix percentages
-- No repetitive themes
-- No long explanations
+Format (each object):
+{"day":2,"theme":"Short theme","hook":"Brief strategy"}
+
+Example start:
+[{"day":2,"theme":"Product Launch","hook":"Announce new collection"},{"day":3,...}]
+
+FORBIDDEN:
+- Do NOT add any commentary
+- Do NOT use single quotes
+- Do NOT break strings across lines
+- Do NOT add trailing commas
+
+Keys: day (number), theme (string), hook (string)
 `
 
 export function generateMonthPlanPrompt(context: {
