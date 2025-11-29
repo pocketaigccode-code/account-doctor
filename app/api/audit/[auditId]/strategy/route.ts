@@ -332,14 +332,14 @@ export async function GET(
           month_plan: null // 暂时为null,后台生成
         }
 
-        // 先保存部分结果,状态标记为generating_calendar
+        // 先保存部分结果(不包含month_plan,但状态已完成)
         await supabaseAdmin
           .from('audits')
           .update({
             strategy_section: partialStrategySection,
             execution_calendar: partialExecutionCalendar,
-            status: 'generating_calendar', // 新状态:正在生成日历
-            progress: 80,
+            status: 'completed', // 标记为已完成,month_plan会异步补充
+            progress: 100,
             ai_model_used: 'gpt-5.1',
             generation_time_ms: partialTime
           })
@@ -354,8 +354,8 @@ export async function GET(
           execution_calendar: partialExecutionCalendar,
           cached: false,
           generation_time_ms: partialTime,
-          progress: 80,
-          month_plan_generating: true // 告知前端月度计划在后台生成
+          progress: 100, // 前端期望100表示完成
+          month_plan_generating: true // 告知前端月度计划需要额外加载
         })
 
         console.log(`[SSE Strategy] ✅ Partial completion in ${partialTime}ms`)
