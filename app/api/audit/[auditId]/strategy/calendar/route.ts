@@ -70,21 +70,60 @@ async function callGemini(
   }
 }
 
-// JSON解析
+// JSON解析 - 完善的错误处理和自动修复
 function parseJSON(aiResponse: string): any {
+  console.log('[Calendar parseJSON] 原始响应长度:', aiResponse.length)
+
+  // 尝试直接解析
   try {
     const trimmed = aiResponse.trim()
-    return JSON.parse(trimmed)
-  } catch (e) {
-    // 尝试修复
-    let fixed = aiResponse
-      .trim()
-      .replace(/,(\s*[}\]])/g, '$1')
-      .replace(/'/g, '"')
-      .replace(/\n/g, '\\n')
-      .replace(/\r/g, '')
+    if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+      return JSON.parse(trimmed)
+    }
+  } catch (e: any) {
+    console.log('[Calendar parseJSON] 直接解析失败:', e.message)
+  }
 
-    return JSON.parse(fixed)
+  // 清洗JSON
+  let cleaned = aiResponse
+    .replace(/\/\/.*$/gm, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .trim()
+
+  // 提取JSON
+  const startIndex = cleaned.indexOf('[') !== -1 ? cleaned.indexOf('[') : cleaned.indexOf('{')
+  if (startIndex === -1) {
+    throw new Error('AI返回格式错误,无法解析JSON')
+  }
+
+  const jsonStr = cleaned.substring(startIndex)
+  console.log('[Calendar parseJSON] JSON前100字符:', jsonStr.substring(0, 100))
+  console.log('[Calendar parseJSON] JSON后100字符:', jsonStr.substring(jsonStr.length - 100))
+
+  try {
+    return JSON.parse(jsonStr)
+  } catch (e: any) {
+    console.error('[Calendar parseJSON] 解析失败:', e.message)
+    const errorPos = parseInt(e.message.match(/position (\d+)/)?.[1] || '0')
+    if (errorPos > 0) {
+      console.error('[Calendar parseJSON] 错误位置:', jsonStr.substring(Math.max(0, errorPos - 50), errorPos + 50))
+    }
+
+    // 尝试自动修复
+    try {
+      let fixedJson = jsonStr
+        .replace(/,(\s*[}\]])/g, '$1')
+        .replace(/'/g, '"')
+        .replace(/\n/g, '\\n')
+        .replace(/\r/g, '')
+
+      const fixed = JSON.parse(fixedJson)
+      console.log('[Calendar parseJSON] ✅ 自动修复成功!')
+      return fixed
+    } catch (fixError: any) {
+      console.error('[Calendar parseJSON] ❌ 修复失败:', fixError.message)
+      throw new Error(`JSON解析失败: ${e.message}`)
+    }
   }
 }
 
