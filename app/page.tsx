@@ -2,9 +2,12 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useLanguage } from '@/contexts/LanguageContext'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 
 export default function Home() {
   const router = useRouter()
+  const { t } = useLanguage()
   const [username, setUsername] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -14,7 +17,7 @@ export default function Home() {
     setError('')
 
     if (!username.trim()) {
-      setError('请输入Instagram用户名')
+      setError(t('home.errorRequired'))
       return
     }
 
@@ -32,7 +35,7 @@ export default function Home() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.ui_message || errorData.message || '诊断失败')
+        throw new Error(errorData.ui_message || errorData.message || t('home.errorFailed'))
       }
 
       const data = await response.json()
@@ -52,7 +55,7 @@ export default function Home() {
       router.push(`/audit/${data.audit_id}`)
 
     } catch (err) {
-      setError((err as Error).message || '发生错误,请重试')
+      setError((err as Error).message || t('common.error'))
       setIsLoading(false)
     }
   }
@@ -61,8 +64,9 @@ export default function Home() {
     <div className="min-h-screen bg-sand-50">
       {/* Navigation */}
       <nav className="bg-white/80 backdrop-blur-sm border-b border-sand-200">
-        <div className="max-w-5xl mx-auto px-8 py-5">
-          <h1 className="font-serif text-charcoal-900 text-xl font-bold">AccountDoctor</h1>
+        <div className="max-w-5xl mx-auto px-8 py-5 flex justify-between items-center">
+          <h1 className="font-serif text-charcoal-900 text-xl font-bold">{t('common.appName')}</h1>
+          <LanguageSwitcher />
         </div>
       </nav>
 
@@ -70,11 +74,11 @@ export default function Home() {
       <section className="max-w-4xl mx-auto px-8 pt-20 pb-16">
         <div className="text-center mb-16">
           <h1 className="font-serif text-5xl font-bold text-charcoal-900 mb-6 leading-tight tracking-tight">
-            Instagram 账号深度诊断与优化
+            {t('home.title')}
           </h1>
 
           <p className="font-sans text-lg text-charcoal-600 mb-12 max-w-2xl mx-auto leading-relaxed">
-            60秒获得专业的 AI 账号诊断报告,发现隐形问题。
+            {t('home.subtitle')}
           </p>
 
           {/* Input Form */}
@@ -85,7 +89,7 @@ export default function Home() {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="输入 Instagram 用户名"
+                  placeholder={t('home.inputPlaceholder')}
                   disabled={isLoading}
                   className="w-full px-5 py-4 text-base border-2 border-charcoal-900 bg-white text-charcoal-900 placeholder:text-charcoal-600 focus:outline-none focus:ring-2 focus:ring-charcoal-900 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed font-sans"
                 />
@@ -103,25 +107,25 @@ export default function Home() {
                 className="w-full bg-charcoal-900 text-white font-sans font-semibold text-base py-4 px-8 hover:bg-charcoal-800 transition-colors disabled:bg-charcoal-600 disabled:cursor-not-allowed border-none"
                 style={{ backgroundColor: isLoading ? '#666666' : '#191919', color: '#ffffff' }}
               >
-                {isLoading ? '分析中...' : '开始诊断'}
+                {isLoading ? t('home.analyzingButton') : t('home.startButton')}
               </button>
 
               {isLoading && (
                 <div className="text-center mt-6">
                   <div className="inline-block bg-white border-2 border-sand-300 px-8 py-6">
-                    <p className="text-xs font-sans font-bold text-charcoal-900 mb-4 uppercase tracking-widest">正在分析</p>
+                    <p className="text-xs font-sans font-bold text-charcoal-900 mb-4 uppercase tracking-widest">{t('home.analyzing.title')}</p>
                     <div className="space-y-2 text-left">
                       <div className="flex items-center gap-3 text-sm font-sans">
                         <span className="text-sage">✓</span>
-                        <span className="text-charcoal-900">获取数据</span>
+                        <span className="text-charcoal-900">{t('home.analyzing.step1')}</span>
                       </div>
                       <div className="flex items-center gap-3 text-sm font-sans">
                         <div className="w-4 h-4 border-2 border-charcoal-900 border-t-transparent rounded-full animate-spin"></div>
-                        <span className="text-charcoal-900 font-medium">AI分析中...</span>
+                        <span className="text-charcoal-900 font-medium">{t('home.analyzing.step2')}</span>
                       </div>
                       <div className="flex items-center gap-3 text-sm font-sans">
                         <span className="text-sand-400">○</span>
-                        <span className="text-charcoal-400">生成报告</span>
+                        <span className="text-charcoal-400">{t('home.analyzing.step3')}</span>
                       </div>
                     </div>
                   </div>
@@ -136,23 +140,23 @@ export default function Home() {
       <section className="max-w-4xl mx-auto px-8 pb-20">
         <div className="grid md:grid-cols-3 gap-8">
           <div className="bg-white p-8 border border-sand-200 shadow-sm">
-            <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-3">多维度评分</h3>
+            <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-3">{t('home.features.feature1Title')}</h3>
             <p className="font-sans text-sm text-charcoal-600 leading-relaxed">
-              35+维度深度分析账号表现,提供全面的健康度评估
+              {t('home.features.feature1Desc')}
             </p>
           </div>
 
           <div className="bg-white p-8 border border-sand-200 shadow-sm">
-            <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-3">AI内容生成</h3>
+            <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-3">{t('home.features.feature2Title')}</h3>
             <p className="font-sans text-sm text-charcoal-600 leading-relaxed">
-              智能文案、标签和内容日历规划,让创作更轻松
+              {t('home.features.feature2Desc')}
             </p>
           </div>
 
           <div className="bg-white p-8 border border-sand-200 shadow-sm">
-            <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-3">可执行方案</h3>
+            <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-3">{t('home.features.feature3Title')}</h3>
             <p className="font-sans text-sm text-charcoal-600 leading-relaxed">
-              具体改进步骤和优先级排序,即刻开始优化
+              {t('home.features.feature3Desc')}
             </p>
           </div>
         </div>
@@ -162,7 +166,7 @@ export default function Home() {
       <footer className="border-t border-sand-200 bg-white py-8">
         <div className="max-w-4xl mx-auto px-8 text-center">
           <p className="font-sans text-xs text-charcoal-600">
-            © 2025 AccountDoctor. AI驱动的社交媒体账号诊断工具
+            {t('home.footer')}
           </p>
         </div>
       </footer>

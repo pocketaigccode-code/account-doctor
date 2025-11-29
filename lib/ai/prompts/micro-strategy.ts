@@ -8,7 +8,12 @@
 // 耗时: 3-5秒 | 输出: ~300 tokens
 // ==========================================
 
-export const PERSONA_SYSTEM_PROMPT = `You are a JSON-only API. Return ONLY valid JSON object, nothing else.
+export const PERSONA_SYSTEM_PROMPT = `LANGUAGE REQUIREMENT (CRITICAL):
+- You MUST respond in English ONLY for all generated content
+- ALL text fields (archetype, tone_voice, one_liner_bio) must be in English
+- This is a strict requirement - no Chinese, Japanese, Korean, or any other language
+
+You are a JSON-only API. Return ONLY valid JSON object, nothing else.
 
 CRITICAL: Your response must start with { and end with }. No text before or after.
 
@@ -47,7 +52,12 @@ Output JSON object with brand persona. Start with { and end with }.`
 // 耗时: 3-5秒 | 输出: ~400 tokens
 // ==========================================
 
-export const AUDIENCE_SYSTEM_PROMPT = `You are a JSON-only API. Return ONLY valid JSON array, nothing else.
+export const AUDIENCE_SYSTEM_PROMPT = `LANGUAGE REQUIREMENT (CRITICAL):
+- You MUST respond in English ONLY for all generated content
+- ALL text fields (description, pain_point) must be in English
+- This is a strict requirement - no Chinese, Japanese, Korean, or any other language
+
+You are a JSON-only API. Return ONLY valid JSON array, nothing else.
 
 CRITICAL: Your response must start with [ and end with ]. No text before or after.
 
@@ -85,7 +95,12 @@ Output JSON array with 2 audience profiles. Start with [ and end with ].`
 // 耗时: 2-3秒 | 输出: ~200 tokens
 // ==========================================
 
-export const CONTENT_MIX_SYSTEM_PROMPT = `You are a JSON-only API. Return ONLY valid JSON array, nothing else.
+export const CONTENT_MIX_SYSTEM_PROMPT = `LANGUAGE REQUIREMENT (CRITICAL):
+- You MUST respond in English ONLY for all generated content
+- ALL label fields must be in English
+- This is a strict requirement - no Chinese, Japanese, Korean, or any other language
+
+You are a JSON-only API. Return ONLY valid JSON array, nothing else.
 
 CRITICAL: Your response must start with [ and end with ]. No text before or after.
 
@@ -128,7 +143,14 @@ Generate 4-5 industry-specific content types with percentages. Labels must match
 // 依赖: persona (需要在Stage 1完成后执行)
 // ==========================================
 
-export const DAY1_SYSTEM_PROMPT = `You are a JSON-only API. Return ONLY valid JSON object, nothing else.
+export const DAY1_SYSTEM_PROMPT = `LANGUAGE REQUIREMENT (CRITICAL):
+- You MUST respond in English ONLY for all generated content
+- ALL text fields (title, caption) must be in English
+- Exception: hashtags may include local language tags if culturally relevant
+- image_gen_prompt MUST be in English for AI image generators
+- This is a strict requirement - no Chinese in caption or title
+
+You are a JSON-only API. Return ONLY valid JSON object, nothing else.
 
 CRITICAL: Your response must start with { and end with }. No text before or after.
 
@@ -183,7 +205,12 @@ Create viral Day 1 post JSON.
 // 依赖: content_mix (需要在Stage 1完成后执行)
 // ==========================================
 
-export const MONTH_PLAN_SYSTEM_PROMPT = `You are a JSON-only API. Return ONLY a valid JSON array.
+export const MONTH_PLAN_SYSTEM_PROMPT = `LANGUAGE REQUIREMENT (CRITICAL):
+- You MUST respond in English ONLY for all generated content
+- ALL text fields (theme, hook) must be in English
+- This is a strict requirement - no Chinese, Japanese, Korean, or any other language
+
+You are a JSON-only API. Return ONLY a valid JSON array.
 
 CRITICAL REQUIREMENTS:
 1. Your response must start with [ and end with ]

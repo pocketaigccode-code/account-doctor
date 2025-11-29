@@ -7,6 +7,12 @@ import type { InstagramScanData } from '@/lib/scrapers/instagram'
 import { formatFollowerCount } from '@/lib/cache/apify-cache'
 
 export const PROFILE_ANALYST_SYSTEM_PROMPT = `
+LANGUAGE REQUIREMENT (CRITICAL):
+- You MUST respond in English ONLY for all generated content
+- ALL JSON field values must be in English
+- This includes: summary_title, key_issues, category_label
+- No Chinese, Japanese, Korean, or any other language
+
 # Role
 你是一个 Instagram 账号数据分析专家。你的任务是接收原始的 JSON 数据(由 Apify 抓取),提取关键业务字段,并对账号的健康度进行客观诊断。
 
@@ -128,6 +134,8 @@ ${recentPosts.slice(0, 5).map((post, i) => `
 `).join('\n')}
 
 请按照系统提示词中的JSON格式输出分析结果。
+
+IMPORTANT: Return all text in English. Do NOT use Chinese in any JSON values (summary_title, key_issues, category_label).
 `
 }
 

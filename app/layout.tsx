@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Merriweather } from "next/font/google";
 import "./globals.css";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -14,8 +15,8 @@ const merriweather = Merriweather({
 });
 
 export const metadata: Metadata = {
-  title: "AccountDoctor - Instagram账号诊断工具",
-  description: "AI驱动的Instagram账号诊断与优化工具",
+  title: "AccountDoctor - Instagram Account Analysis Tool",
+  description: "AI-powered Instagram account diagnosis and optimization tool for businesses and creators",
 };
 
 export default function RootLayout({
@@ -28,7 +29,9 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${merriweather.variable} font-sans antialiased`}
       >
-        {children}
+        <LanguageProvider>
+          {children}
+        </LanguageProvider>
       </body>
     </html>
   );

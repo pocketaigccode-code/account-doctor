@@ -28,9 +28,10 @@ interface ProfileSnapshotData {
 
 interface ProfileSnapshotProps {
   data: ProfileSnapshotData
+  t: (key: string) => string
 }
 
-export function ProfileSnapshot({ data }: ProfileSnapshotProps) {
+export function ProfileSnapshot({ data, t }: ProfileSnapshotProps) {
   const displayHandle = data.username || data.handle || ''
   const hasAIEnhancement = data.category_label !== undefined
 
@@ -46,13 +47,13 @@ export function ProfileSnapshot({ data }: ProfileSnapshotProps) {
   const getActivityStyle = (status: string) => {
     switch (status) {
       case 'Active':
-        return { color: 'text-green-700', bg: 'bg-green-50', border: 'border-green-600', text: '活跃' }
+        return { color: 'text-green-700', bg: 'bg-green-50', border: 'border-green-600', text: t('result.profile.active') }
       case 'Dormant':
-        return { color: 'text-yellow-700', bg: 'bg-yellow-50', border: 'border-yellow-600', text: '休眠' }
+        return { color: 'text-yellow-700', bg: 'bg-yellow-50', border: 'border-yellow-600', text: t('result.profile.dormant') }
       case 'Inactive':
-        return { color: 'text-red-700', bg: 'bg-red-50', border: 'border-red-600', text: '不活跃' }
+        return { color: 'text-red-700', bg: 'bg-red-50', border: 'border-red-600', text: t('result.profile.inactive') }
       default:
-        return { color: 'text-gray-700', bg: 'bg-gray-50', border: 'border-gray-600', text: '未知' }
+        return { color: 'text-gray-700', bg: 'bg-gray-50', border: 'border-gray-600', text: t('result.profile.inactive') }
     }
   }
 
@@ -115,7 +116,7 @@ export function ProfileSnapshot({ data }: ProfileSnapshotProps) {
               </span>
             </div>
             <span className="font-sans text-sm text-charcoal-600">
-              最后发布: {data.last_post_date}
+              {t('result.profile.lastPost')}: {data.last_post_date}
             </span>
           </div>
         </div>
@@ -125,7 +126,7 @@ export function ProfileSnapshot({ data }: ProfileSnapshotProps) {
       <div className="grid md:grid-cols-4 gap-4 mb-8">
         {/* 帖子数 */}
         <div className="bg-gradient-to-br from-sage/10 to-sage/5 border-l-4 border-sage p-5">
-          <p className="font-sans text-xs text-charcoal-600 mb-2 font-semibold uppercase tracking-wide">帖子</p>
+          <p className="font-sans text-xs text-charcoal-600 mb-2 font-semibold uppercase tracking-wide">{t('result.profile.posts')}</p>
           <p className="font-serif text-3xl font-bold text-charcoal-900">
             {data.post_count !== undefined ? data.post_count.toLocaleString() : '-'}
           </p>
@@ -133,7 +134,7 @@ export function ProfileSnapshot({ data }: ProfileSnapshotProps) {
 
         {/* 粉丝数 */}
         <div className="bg-gradient-to-br from-blue-50 to-blue-25 border-l-4 border-blue-500 p-5">
-          <p className="font-sans text-xs text-charcoal-600 mb-2 font-semibold uppercase tracking-wide">粉丝</p>
+          <p className="font-sans text-xs text-charcoal-600 mb-2 font-semibold uppercase tracking-wide">{t('result.profile.followers')}</p>
           <p className="font-serif text-3xl font-bold text-charcoal-900">
             {data.follower_count !== undefined ? (data.follower_count >= 1000000
               ? `${(data.follower_count / 1000000).toFixed(1)}M`
@@ -146,7 +147,7 @@ export function ProfileSnapshot({ data }: ProfileSnapshotProps) {
 
         {/* 关注数 */}
         <div className="bg-gradient-to-br from-terracotta-light/30 to-terracotta-light/10 border-l-4 border-terracotta p-5">
-          <p className="font-sans text-xs text-charcoal-600 mb-2 font-semibold uppercase tracking-wide">关注</p>
+          <p className="font-sans text-xs text-charcoal-600 mb-2 font-semibold uppercase tracking-wide">{t('result.profile.following')}</p>
           <p className="font-serif text-3xl font-bold text-charcoal-900">
             {data.following_count !== undefined ? data.following_count.toLocaleString() : '-'}
           </p>
@@ -154,7 +155,7 @@ export function ProfileSnapshot({ data }: ProfileSnapshotProps) {
 
         {/* 平均点赞 */}
         <div className="bg-gradient-to-br from-pink-50 to-pink-25 border-l-4 border-pink-500 p-5">
-          <p className="font-sans text-xs text-charcoal-600 mb-2 font-semibold uppercase tracking-wide">平均点赞</p>
+          <p className="font-sans text-xs text-charcoal-600 mb-2 font-semibold uppercase tracking-wide">{t('result.profile.avgLikes')}</p>
           <p className="font-serif text-3xl font-bold text-charcoal-900">
             {data.avg_likes.toLocaleString()}
           </p>
@@ -164,7 +165,7 @@ export function ProfileSnapshot({ data }: ProfileSnapshotProps) {
       {/* === 底部: 转化清单 === */}
       {hasAIEnhancement && data.missing_elements && data.missing_elements.length > 0 && (
         <div className="bg-terracotta-light/20 border-l-4 border-terracotta p-6 mb-8">
-          <h3 className="font-serif text-lg font-bold text-charcoal-900 mb-4">⚠️ 转化优化建议</h3>
+          <h3 className="font-serif text-lg font-bold text-charcoal-900 mb-4">⚠️ {t('result.profile.optimizationSuggestions')}</h3>
           <div className="grid md:grid-cols-2 gap-3">
             {data.missing_elements.map((item, i) => (
               <div key={i} className="flex items-center gap-3 bg-white border border-terracotta/30 p-3">
@@ -172,7 +173,7 @@ export function ProfileSnapshot({ data }: ProfileSnapshotProps) {
                   !
                 </div>
                 <span className="font-sans text-sm text-charcoal-900 font-medium">
-                  缺少 {item}
+                  {t('result.profile.missing')} {item}
                 </span>
               </div>
             ))}
@@ -184,7 +185,7 @@ export function ProfileSnapshot({ data }: ProfileSnapshotProps) {
       {data.recent_posts_preview && data.recent_posts_preview.length > 0 && (
         <div>
           <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-4">
-            最近内容 (视觉足迹)
+            {t('result.profile.recentPosts')}
           </h3>
           <div className="grid grid-cols-5 gap-3">
             {postsWithProxyUrls?.map((post, i) => (

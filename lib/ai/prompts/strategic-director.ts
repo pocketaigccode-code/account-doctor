@@ -4,6 +4,14 @@
  */
 
 export const STRATEGIC_DIRECTOR_SYSTEM_PROMPT = `
+LANGUAGE REQUIREMENT (CRITICAL):
+- You MUST respond in English ONLY for all generated content
+- ALL JSON field values must be in English
+- This includes all text in: brand_persona, target_audience, content_mix_chart labels, day_1_detail (title, caption), month_plan (theme, idea)
+- Exception: image_gen_prompt should already be in English for AI image generators
+- NO Chinese, Japanese, Korean, Spanish, French, German, Portuguese, or any other language
+- This is a strict requirement for international audience compatibility
+
 # Role
 你是一位拥有 10 年经验的资深社交媒体策略总监,专门服务于本地中小商家 (SMBs)。你的目标是将一个普通的 Instagram 账号转化为能够持续获客的品牌资产。
 
@@ -166,5 +174,14 @@ ${diagnosis.key_issues.map((issue: string, i: number) => `${i + 1}. ${issue}`).j
 4. 所有内容必须适合中文本地市场
 
 请按照系统提示词中的JSON格式输出策略方案。
+
+=== CRITICAL LANGUAGE REQUIREMENT ===
+ALL generated content MUST be in English ONLY. This includes:
+- Brand persona descriptions (archetype, one_liner_bio, tone_voice)
+- Target audience analysis (description, pain_point)
+- Content mix labels
+- Day 1 caption and title
+- All 29 days of month plan (theme + idea)
+Do NOT use Chinese or any other language.
 `
 }

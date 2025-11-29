@@ -49,13 +49,14 @@ interface StrategyData {
 
 interface StrategySectionProps {
   auditId: string
+  t: (key: string) => string
   onDataLoaded?: (data: StrategyData) => void
   onDay1Loaded?: (day1: any) => void
   onCalendarLoaded?: (calendar: any) => void
   onProgressUpdate?: (progress: number) => void
 }
 
-export function StrategySection({ auditId, onDataLoaded, onDay1Loaded, onCalendarLoaded, onProgressUpdate }: StrategySectionProps) {
+export function StrategySection({ auditId, t, onDataLoaded, onDay1Loaded, onCalendarLoaded, onProgressUpdate }: StrategySectionProps) {
   const [strategy, setStrategy] = useState<StrategyData | null>(null)
   const [progress, setProgress] = useState(0)
   const [phase, setPhase] = useState('loading')
@@ -154,14 +155,14 @@ export function StrategySection({ auditId, onDataLoaded, onDay1Loaded, onCalenda
         try {
           const errorData = JSON.parse(e.data)
           if (errorData.error === 'AI_GENERATION_FAILED' && errorData.message.includes('Diagnosis data not ready')) {
-            setError('诊断数据尚未准备好,请稍候片刻再刷新页面')
+            setError(t('result.strategy.dataNotReady'))
             eventSource.close()
             return
           }
         } catch {}
       }
 
-      setError('连接中断,正在尝试重连...')
+      setError(t('result.strategy.connectionLost'))
       eventSource.close()
 
       // 降级到轮询
@@ -179,7 +180,7 @@ export function StrategySection({ auditId, onDataLoaded, onDay1Loaded, onCalenda
 
   // 加载状态 - 初始连接中
   if (!strategy && progress === 0) {
-    return <AIThinkingAnimation phase={phase} progress={progress} error={error} />
+    return <AIThinkingAnimation phase={phase} progress={progress} error={error} t={t} />
   }
 
   // 渲染策略内容 (渐进式显示)
@@ -189,7 +190,7 @@ export function StrategySection({ auditId, onDataLoaded, onDay1Loaded, onCalenda
       {strategy?.strategy_section?.brand_persona ? (
         <div className="bg-white border border-sand-200 p-10 shadow-sm">
         <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">
-          品牌人设
+          {t('result.strategy.brandPersona')}
         </h2>
         <div className="bg-sand-50 border border-sand-200 p-6">
           <h3 className="font-serif text-2xl font-bold text-charcoal-900 mb-3">
@@ -200,7 +201,7 @@ export function StrategySection({ auditId, onDataLoaded, onDay1Loaded, onCalenda
           </p>
           <div className="bg-white border border-sand-200 p-4">
             <p className="font-sans text-xs text-charcoal-600 mb-1 font-semibold">
-              优化后的简介:
+              {t('result.strategy.optimizedBio')}:
             </p>
             <p className="font-sans text-sm text-charcoal-900">
               {strategy.strategy_section?.brand_persona?.one_liner_bio}
@@ -209,45 +210,45 @@ export function StrategySection({ auditId, onDataLoaded, onDay1Loaded, onCalenda
         </div>
       </div>
       ) : progress >= 10 ? (
-        <SkeletonCardLarge title="品牌人设" message="正在生成品牌人设..." />
+        <SkeletonCardLarge title={t('result.strategy.brandPersona')} message={t('result.strategy.generatingPersona')} />
       ) : null}
 
       {/* 内容配比 - 数据或骨架屏 */}
       {strategy?.strategy_section?.content_mix_chart ? (
         <div className="bg-white border border-sand-200 p-10 shadow-sm">
           <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">
-            内容配比策略
+            {t('result.strategy.contentMix')}
           </h2>
           <ContentMixPieChart data={strategy.strategy_section.content_mix_chart} />
         </div>
       ) : progress >= 25 && strategy?.strategy_section?.brand_persona ? (
-        <SkeletonCardLarge title="内容配比策略" message="正在规划内容配比..." />
+        <SkeletonCardLarge title={t('result.strategy.contentMix')} message={t('result.strategy.generatingMix')} />
       ) : null}
 
       {/* 目标受众 - 数据或骨架屏 */}
       {strategy?.strategy_section?.target_audience ? (
         <div className="bg-white border border-sand-200 p-10 shadow-sm">
           <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">
-            目标受众
+            {t('result.strategy.targetAudience')}
           </h2>
           <div className="grid md:grid-cols-2 gap-6">
             {strategy.strategy_section.target_audience.map((audience: any, i: number) => (
               <div key={i} className="bg-sand-50 border border-sand-200 p-6">
                 <span className="inline-block bg-charcoal-900 text-white px-3 py-1.5 font-sans text-xs font-bold mb-3">
-                  {audience.type}
+                  {audience.type === 'Main' ? t('result.strategy.main') : t('result.strategy.secondary')}
                 </span>
                 <h4 className="font-serif text-lg font-bold text-charcoal-900 mb-2">
                   {audience.description}
                 </h4>
                 <p className="font-sans text-sm text-charcoal-600">
-                  <span className="font-semibold">痛点:</span> {audience.pain_point}
+                  <span className="font-semibold">{t('result.strategy.painPoint')}:</span> {audience.pain_point}
                 </p>
               </div>
             ))}
           </div>
         </div>
       ) : progress >= 35 && strategy?.strategy_section?.content_mix_chart ? (
-        <SkeletonCardLarge title="目标受众" message="正在分析目标受众..." />
+        <SkeletonCardLarge title={t('result.strategy.targetAudience')} message={t('result.strategy.generatingAudience')} />
       ) : null}
     </div>
   )
