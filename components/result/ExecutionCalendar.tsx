@@ -1,7 +1,13 @@
 /**
  * ExecutionCalendar - 30天执行日历组件
  * Day 1完整展示, Day 2-30锁定状态
+ * 支持月度计划异步加载
  */
+
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
 
 interface ExecutionCalendarProps {
   calendar: {
@@ -15,12 +21,45 @@ interface ExecutionCalendarProps {
       day: number
       theme: string
       idea: string
-    }>
+    }> | null
   }
   t: (key: string) => string
 }
 
 export function ExecutionCalendar({ calendar, t }: ExecutionCalendarProps) {
+  const params = useParams()
+  const auditId = params?.auditId as string
+  const [monthPlan, setMonthPlan] = useState(calendar?.month_plan || null)
+  const [isLoadingCalendar, setIsLoadingCalendar] = useState(false)
+
+  // 如果month_plan为null,尝试异步加载
+  useEffect(() => {
+    if (!calendar?.day_1_detail || monthPlan || isLoadingCalendar) {
+      return
+    }
+
+    console.log('[Calendar] 检测到month_plan为null,启动异步加载')
+    setIsLoadingCalendar(true)
+
+    // 调用calendar API
+    fetch(`/api/audit/${auditId}/strategy/calendar`, { method: 'POST' })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.month_plan) {
+          console.log('[Calendar] ✅ 月度计划加载成功')
+          setMonthPlan(data.month_plan)
+        } else {
+          console.error('[Calendar] ❌ 加载失败:', data)
+        }
+      })
+      .catch(error => {
+        console.error('[Calendar] ❌ 请求失败:', error)
+      })
+      .finally(() => {
+        setIsLoadingCalendar(false)
+      })
+  }, [calendar, monthPlan, isLoadingCalendar, auditId])
+
   if (!calendar || !calendar.day_1_detail) {
     return null
   }
@@ -112,7 +151,7 @@ export function ExecutionCalendar({ calendar, t }: ExecutionCalendarProps) {
           </div>
 
           {/* Day 2-7 - 已规划 */}
-          {calendar.month_plan.slice(0, 6).map((day) => (
+          {monthPlan?.slice(0, 6).map((day) => (
             <div key={day.day} className="border border-sand-200 p-4 bg-sand-50">
               <div className="font-sans text-xs font-bold text-charcoal-900 mb-2">{t('result.calendar.day')} {day.day} {t('result.calendar.dayUnit')}</div>
               <div className="aspect-square bg-sand-200 mb-2"></div>
@@ -124,7 +163,7 @@ export function ExecutionCalendar({ calendar, t }: ExecutionCalendarProps) {
 
         {/* Day 8-14 */}
         <div className="grid grid-cols-7 gap-4 mb-8">
-          {calendar.month_plan.slice(6, 13).map((day) => (
+          {monthPlan?.slice(6, 13).map((day) => (
             <div key={day.day} className="border border-sand-200 p-3 bg-sand-50">
               <div className="font-sans text-xs font-bold text-charcoal-900 mb-2">{t('result.calendar.day')} {day.day} {t('result.calendar.dayUnit')}</div>
               <div className="aspect-square bg-sand-200 mb-1"></div>
@@ -136,7 +175,7 @@ export function ExecutionCalendar({ calendar, t }: ExecutionCalendarProps) {
 
         {/* Day 15-21 */}
         <div className="grid grid-cols-7 gap-4 mb-8">
-          {calendar.month_plan.slice(13, 20).map((day) => (
+          {monthPlan?.slice(13, 20).map((day) => (
             <div key={day.day} className="border border-sand-200 p-3 bg-sand-50">
               <div className="font-sans text-xs font-bold text-charcoal-900 mb-2">{t('result.calendar.day')} {day.day} {t('result.calendar.dayUnit')}</div>
               <div className="aspect-square bg-sand-200 mb-1"></div>
@@ -148,7 +187,7 @@ export function ExecutionCalendar({ calendar, t }: ExecutionCalendarProps) {
 
         {/* Day 22-28 */}
         <div className="grid grid-cols-7 gap-4 mb-8">
-          {calendar.month_plan.slice(20, 27).map((day) => (
+          {monthPlan?.slice(20, 27).map((day) => (
             <div key={day.day} className="border border-sand-200 p-3 bg-sand-50">
               <div className="font-sans text-xs font-bold text-charcoal-900 mb-2">{t('result.calendar.day')} {day.day} {t('result.calendar.dayUnit')}</div>
               <div className="aspect-square bg-sand-200 mb-1"></div>
@@ -160,7 +199,7 @@ export function ExecutionCalendar({ calendar, t }: ExecutionCalendarProps) {
 
         {/* Day 29-30 */}
         <div className="grid grid-cols-7 gap-4 mb-8">
-          {calendar.month_plan.slice(27, 29).map((day) => (
+          {monthPlan?.slice(27, 29).map((day) => (
             <div key={day.day} className="border border-sand-200 p-3 bg-sand-50">
               <div className="font-sans text-xs font-bold text-charcoal-900 mb-2">{t('result.calendar.day')} {day.day} {t('result.calendar.dayUnit')}</div>
               <div className="aspect-square bg-sand-200 mb-1"></div>

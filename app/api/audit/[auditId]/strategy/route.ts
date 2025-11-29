@@ -317,72 +317,49 @@ export async function GET(
         })
 
         // ================================================
-        // Module 5: Month Plan (串行,15秒)
+        // 先保存前4个模块的结果 (不包含month_plan)
         // ================================================
-        sendEvent('status', { phase: 'building_month_plan', progress: 80 })
-        console.log('[Module 5] 📤 Building Month Plan...')
+        const partialTime = Date.now() - startTime
 
-        const monthPlanResponse = await callGemini(
-          generateMonthPlanPrompt({
-            category: context.category,
-            content_mix: mixArray,
-            persona: personaData
-          }),
-          MONTH_PLAN_SYSTEM_PROMPT,
-          3000  // ✅ MonthPlan需要更多tokens (29天计划,每天约100tokens)
-        )
-        const monthPlanData = parseJSON(monthPlanResponse, 'MonthPlan')
-
-        console.log('[Module 5] ✅ Month Plan completed')
-        console.log('[Module 5] Month plan length:', monthPlanData?.length)
-
-        // 立即推送月度计划
-        sendEvent('partial_update', {
-          month_plan: monthPlanData,
-          progress: 95
-        })
-
-        // ================================================
-        // 保存完整结果到数据库
-        // ================================================
-        const totalTime = Date.now() - startTime
-
-        const finalStrategySection = {
+        const partialStrategySection = {
           brand_persona: personaData,
           target_audience: Array.isArray(audienceData) ? audienceData : [audienceData],
           content_mix_chart: mixArray
         }
 
-        const finalExecutionCalendar = {
+        const partialExecutionCalendar = {
           day_1_detail: day1Data,
-          month_plan: monthPlanData
+          month_plan: null // 暂时为null,后台生成
         }
 
+        // 先保存部分结果,状态标记为generating_calendar
         await supabaseAdmin
           .from('audits')
           .update({
-            strategy_section: finalStrategySection,
-            execution_calendar: finalExecutionCalendar,
-            status: 'completed',
-            progress: 100,
+            strategy_section: partialStrategySection,
+            execution_calendar: partialExecutionCalendar,
+            status: 'generating_calendar', // 新状态:正在生成日历
+            progress: 80,
             ai_model_used: 'gpt-5.1',
-            generation_time_ms: totalTime
+            generation_time_ms: partialTime
           })
           .eq('id', auditId)
 
         // ================================================
-        // 推送完成事件
+        // SSE立即返回(不等待月度计划)
         // ================================================
         clearInterval(heartbeat)
         sendEvent('complete', {
-          strategy_section: finalStrategySection,
-          execution_calendar: finalExecutionCalendar,
+          strategy_section: partialStrategySection,
+          execution_calendar: partialExecutionCalendar,
           cached: false,
-          generation_time_ms: totalTime,
-          progress: 100
+          generation_time_ms: partialTime,
+          progress: 80,
+          month_plan_generating: true // 告知前端月度计划在后台生成
         })
 
-        console.log(`[SSE Strategy] ✅ Serial execution completed in ${totalTime}ms`)
+        console.log(`[SSE Strategy] ✅ Partial completion in ${partialTime}ms`)
+        console.log(`[SSE Strategy] 📌 月度计划将通过 /strategy/calendar API 异步生成`)
         controller.close()
 
       } catch (error: any) {
