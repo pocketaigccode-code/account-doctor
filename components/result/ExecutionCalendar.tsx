@@ -197,22 +197,28 @@ export function ExecutionCalendar({ calendar, t }: ExecutionCalendarProps) {
 }
 
 /**
- * 月度计划加载动画 - 双层旋转圆圈
+ * 月度计划加载动画 - 三层旋转圆圈
  */
 function MonthPlanLoadingAnimation() {
   return (
-    <div className="relative w-32 h-32">
-      {/* 外圈 - 逆时针旋转 */}
-      <div className="absolute inset-0 border-[6px] border-transparent border-t-charcoal-900 rounded-full animate-spin" style={{ animationDuration: '1.5s' }}></div>
-
-      {/* 中圈 - 顺时针旋转(反向) */}
+    <div className="relative w-32 h-32 mx-auto">
+      {/* 外圈 - 慢速 */}
       <div
-        className="absolute inset-3 border-[5px] border-transparent border-t-coral rounded-full animate-spin"
-        style={{ animationDuration: '2s', animationDirection: 'reverse' }}
+        className="absolute inset-0 rounded-full border-[6px] border-transparent border-t-charcoal-900 animate-spin"
+        style={{ animationDuration: '2s' }}
       ></div>
 
-      {/* 内圈 - 逆时针旋转 */}
-      <div className="absolute inset-6 border-4 border-transparent border-t-sage rounded-full animate-spin" style={{ animationDuration: '1s' }}></div>
+      {/* 中圈 - 中速 */}
+      <div
+        className="absolute inset-3 rounded-full border-[5px] border-transparent border-t-coral animate-spin"
+        style={{ animationDuration: '1.5s' }}
+      ></div>
+
+      {/* 内圈 - 快速 */}
+      <div
+        className="absolute inset-6 rounded-full border-4 border-transparent border-t-sage animate-spin"
+        style={{ animationDuration: '1s' }}
+      ></div>
     </div>
   )
 }
