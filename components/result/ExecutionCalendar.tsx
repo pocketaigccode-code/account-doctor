@@ -34,7 +34,19 @@ export function ExecutionCalendar({ calendar, t }: ExecutionCalendarProps) {
 
   // 如果month_plan为null,尝试异步加载
   useEffect(() => {
-    if (!calendar?.day_1_detail || monthPlan || isLoadingCalendar) {
+    // 初始化monthPlan state
+    if (calendar?.month_plan && !monthPlan) {
+      setMonthPlan(calendar.month_plan)
+      return
+    }
+
+    // 如果已有monthPlan或正在加载,跳过
+    if (monthPlan || isLoadingCalendar || !auditId) {
+      return
+    }
+
+    // 只在有day1但没有month_plan时触发
+    if (!calendar?.day_1_detail) {
       return
     }
 
@@ -46,7 +58,7 @@ export function ExecutionCalendar({ calendar, t }: ExecutionCalendarProps) {
       .then(res => res.json())
       .then(data => {
         if (data.success && data.month_plan) {
-          console.log('[Calendar] ✅ 月度计划加载成功')
+          console.log('[Calendar] ✅ 月度计划加载成功, length:', data.month_plan.length)
           setMonthPlan(data.month_plan)
         } else {
           console.error('[Calendar] ❌ 加载失败:', data)
@@ -58,7 +70,7 @@ export function ExecutionCalendar({ calendar, t }: ExecutionCalendarProps) {
       .finally(() => {
         setIsLoadingCalendar(false)
       })
-  }, [calendar, monthPlan, isLoadingCalendar, auditId])
+  }, [auditId, monthPlan, isLoadingCalendar])
 
   if (!calendar || !calendar.day_1_detail) {
     return null

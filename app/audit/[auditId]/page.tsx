@@ -202,15 +202,11 @@ export default function AuditResultPage({ params }: PageProps) {
           </>
         )}
 
-        {/* 30天日历 - 独立模块 (progress>=80立即显示骨架屏) */}
-        {diagnosisData && (strategyProgress >= 80 || day1Data || calendarData) && (
+        {/* 30天日历 - 独立模块 (有Day1就显示,月度计划异步加载) */}
+        {diagnosisData && day1Data && (
           <>
-            {console.log('[Calendar渲染] calendarData存在?', !!calendarData, calendarData?.length)}
-            {calendarData ? (
-              <ExecutionCalendar calendar={{ day_1_detail: day1Data, month_plan: calendarData }} t={t} />
-            ) : (
-              <CalendarSkeleton t={t} />
-            )}
+            {console.log('[Calendar渲染] day1Data存在?', !!day1Data, 'calendarData:', !!calendarData)}
+            <ExecutionCalendar calendar={{ day_1_detail: day1Data, month_plan: calendarData }} t={t} />
           </>
         )}
       </main>
