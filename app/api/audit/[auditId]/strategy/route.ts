@@ -97,8 +97,9 @@ function parseJSON(aiResponse: string, moduleName: string = ''): any {
     if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
       return JSON.parse(trimmed)
     }
-  } catch (e) {
-    console.log(`[parseJSON ${moduleName}] 直接解析失败,尝试清洗...`)
+  } catch (e: any) {
+    console.log(`[parseJSON ${moduleName}] 直接解析失败:`, e.message)
+    console.log(`[parseJSON ${moduleName}] 尝试清洗和修复...`)
   }
 
   // 清洗JSON: 移除注释和多余换行
@@ -136,7 +137,28 @@ function parseJSON(aiResponse: string, moduleName: string = ''): any {
       console.error(`[parseJSON ${moduleName}] 错误位置前后:`, jsonStr.substring(Math.max(0, errorPos - 50), errorPos + 50))
     }
 
-    throw new Error(`JSON解析失败: ${e.message}`)
+    // 尝试修复常见JSON错误
+    console.log(`[parseJSON ${moduleName}] 尝试自动修复JSON格式错误...`)
+
+    try {
+      let fixedJson = jsonStr
+        // 修复尾随逗号
+        .replace(/,(\s*[}\]])/g, '$1')
+        // 修复单引号为双引号
+        .replace(/'/g, '"')
+        // 修复未转义的换行符
+        .replace(/\n/g, '\\n')
+        .replace(/\r/g, '')
+        // 修复未闭合的字符串(尝试在最后添加")
+        .replace(/"([^"]*?)$/g, '"$1"')
+
+      const fixed = JSON.parse(fixedJson)
+      console.log(`[parseJSON ${moduleName}] ✅ 自动修复成功!`)
+      return fixed
+    } catch (fixError: any) {
+      console.error(`[parseJSON ${moduleName}] ❌ 自动修复也失败:`, fixError.message)
+      throw new Error(`JSON解析失败: ${e.message}`)
+    }
   }
 }
 
