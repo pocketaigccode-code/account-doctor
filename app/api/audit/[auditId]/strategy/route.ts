@@ -35,9 +35,10 @@ async function callGemini(
 
   console.log('[AI Call] 📤 发送请求到DeerAPI, max_tokens:', maxTokens)
 
-  // 添加超时控制
+  // 添加超时控制 - 根据max_tokens动态调整
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 45000) // 45秒超时
+  const timeoutDuration = maxTokens > 2000 ? 90000 : 45000 // 大量tokens需要90秒
+  const timeout = setTimeout(() => controller.abort(), timeoutDuration)
 
   try {
     const response = await fetch(`${DEERAPI_BASE_URL}/v1/chat/completions`, {
@@ -78,8 +79,8 @@ async function callGemini(
     return aiResponse
   } catch (error: any) {
     if (error.name === 'AbortError') {
-      console.error('[AI Call] ❌ 请求超时 (45秒)')
-      throw new Error('AI request timeout after 45 seconds')
+      console.error(`[AI Call] ❌ 请求超时 (${timeoutDuration / 1000}秒)`)
+      throw new Error(`AI request timeout after ${timeoutDuration / 1000} seconds`)
     }
     throw error
   } finally {
