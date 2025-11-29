@@ -52,9 +52,10 @@ interface StrategySectionProps {
   onDataLoaded?: (data: StrategyData) => void
   onDay1Loaded?: (day1: any) => void
   onCalendarLoaded?: (calendar: any) => void
+  onProgressUpdate?: (progress: number) => void
 }
 
-export function StrategySection({ auditId, onDataLoaded, onDay1Loaded, onCalendarLoaded }: StrategySectionProps) {
+export function StrategySection({ auditId, onDataLoaded, onDay1Loaded, onCalendarLoaded, onProgressUpdate }: StrategySectionProps) {
   const [strategy, setStrategy] = useState<StrategyData | null>(null)
   const [progress, setProgress] = useState(0)
   const [phase, setPhase] = useState('loading')
@@ -71,6 +72,11 @@ export function StrategySection({ auditId, onDataLoaded, onDay1Loaded, onCalenda
       setPhase(data.phase)
       setProgress(data.progress)
       console.log(`[SSE] Progress: ${data.progress}% - ${data.phase}`)
+
+      // 触发progress回调
+      if (onProgressUpdate) {
+        onProgressUpdate(data.progress)
+      }
     })
 
     // 监听增量更新 (打字机效果)
@@ -171,30 +177,17 @@ export function StrategySection({ auditId, onDataLoaded, onDay1Loaded, onCalenda
     }
   }, [auditId])
 
-  // 加载状态 - 每个模块都显示骨架屏
-  if (!strategy) {
-    return (
-      <div className="space-y-8">
-        {/* 品牌人设骨架屏 */}
-        <SkeletonCard title="品牌人设" />
-
-        {/* 内容配比骨架屏 */}
-        <SkeletonCard title="内容配比策略" />
-
-        {/* 目标受众骨架屏 */}
-        <SkeletonCard title="目标受众" />
-
-        {/* AI思考动画 (作为悬浮提示) */}
-        <AIThinkingAnimation phase={phase} progress={progress} error={error} />
-      </div>
-    )
+  // 加载状态 - 初始连接中
+  if (!strategy && progress === 0) {
+    return <AIThinkingAnimation phase={phase} progress={progress} error={error} />
   }
 
-  // 渲染策略内容
+  // 渲染策略内容 (渐进式显示)
   return (
     <div className="space-y-8">
-      {/* 品牌人设 */}
-      <div className="bg-white border border-sand-200 p-10 shadow-sm">
+      {/* 品牌人设 - 数据或骨架屏 */}
+      {strategy?.strategy_section?.brand_persona ? (
+        <div className="bg-white border border-sand-200 p-10 shadow-sm">
         <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">
           品牌人设
         </h2>
@@ -215,19 +208,24 @@ export function StrategySection({ auditId, onDataLoaded, onDay1Loaded, onCalenda
           </div>
         </div>
       </div>
+      ) : progress >= 10 ? (
+        <SkeletonCardLarge title="品牌人设" message="正在生成品牌人设..." />
+      ) : null}
 
-      {/* 内容配比 */}
-      {strategy.strategy_section?.content_mix_chart && (
+      {/* 内容配比 - 数据或骨架屏 */}
+      {strategy?.strategy_section?.content_mix_chart ? (
         <div className="bg-white border border-sand-200 p-10 shadow-sm">
           <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">
             内容配比策略
           </h2>
           <ContentMixPieChart data={strategy.strategy_section.content_mix_chart} />
         </div>
-      )}
+      ) : progress >= 25 && strategy?.strategy_section?.brand_persona ? (
+        <SkeletonCardLarge title="内容配比策略" message="正在规划内容配比..." />
+      ) : null}
 
-      {/* 目标受众 */}
-      {strategy.strategy_section?.target_audience && (
+      {/* 目标受众 - 数据或骨架屏 */}
+      {strategy?.strategy_section?.target_audience ? (
         <div className="bg-white border border-sand-200 p-10 shadow-sm">
           <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">
             目标受众
@@ -248,7 +246,37 @@ export function StrategySection({ auditId, onDataLoaded, onDay1Loaded, onCalenda
             ))}
           </div>
         </div>
-      )}
+      ) : progress >= 35 && strategy?.strategy_section?.content_mix_chart ? (
+        <SkeletonCardLarge title="目标受众" message="正在分析目标受众..." />
+      ) : null}
+    </div>
+  )
+}
+
+/**
+ * 大号骨架屏 - 双层转圈动画
+ */
+function SkeletonCardLarge({ title, message }: { title: string; message: string }) {
+  return (
+    <div className="bg-white border border-sand-200 p-10 shadow-sm">
+      <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">{title}</h2>
+
+      {/* 双层转圈动画 */}
+      <div className="flex flex-col items-center justify-center py-16">
+        <div className="relative w-56 h-56">
+          <div className="absolute inset-0 border-[14px] border-sand-200 rounded-full"></div>
+          <div className="absolute inset-0 border-[14px] border-transparent border-t-[#6fa88e] rounded-full animate-spin"></div>
+          <div className="absolute inset-6 border-[12px] border-sand-100 rounded-full"></div>
+          <div className="absolute inset-6 border-[12px] border-transparent border-t-[#e06744] rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '2s' }}></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-4 h-4 bg-charcoal-900 rounded-full mb-2 mx-auto animate-bounce"></div>
+              <p className="font-sans text-xs text-charcoal-600 font-semibold">AI 分析中</p>
+            </div>
+          </div>
+        </div>
+        <p className="font-serif text-lg font-bold text-charcoal-900 mt-8">{message}</p>
+      </div>
     </div>
   )
 }

@@ -23,6 +23,7 @@ export default function AuditResultPage({ params }: PageProps) {
   const [strategyData, setStrategyData] = useState<any>(null)  // 策略数据(Persona+Mix+Audience)
   const [day1Data, setDay1Data] = useState<any>(null)  // Day1内容
   const [calendarData, setCalendarData] = useState<any>(null)  // 30天日历
+  const [strategyProgress, setStrategyProgress] = useState(0)  // Strategy进度
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [aiFailed, setAiFailed] = useState(false)
@@ -174,11 +175,12 @@ export default function AuditResultPage({ params }: PageProps) {
             onDataLoaded={setStrategyData}
             onDay1Loaded={setDay1Data}
             onCalendarLoaded={setCalendarData}
+            onProgressUpdate={setStrategyProgress}
           />
         )}
 
-        {/* Day 1内容预览 - 独立模块 (Audience显示后立即显示骨架屏) */}
-        {diagnosisData && strategyData?.target_audience && (
+        {/* Day 1内容预览 - 独立模块 (progress>=60立即显示骨架屏) */}
+        {diagnosisData && (strategyProgress >= 60 || day1Data) && (
           <>
             {console.log('[Day1渲染] day1Data存在?', !!day1Data, day1Data?.title)}
             {day1Data ? (
@@ -189,8 +191,8 @@ export default function AuditResultPage({ params }: PageProps) {
           </>
         )}
 
-        {/* 30天日历 - 独立模块 (Day1显示后立即显示骨架屏) */}
-        {diagnosisData && day1Data && (
+        {/* 30天日历 - 独立模块 (progress>=80立即显示骨架屏) */}
+        {diagnosisData && (strategyProgress >= 80 || day1Data || calendarData) && (
           <>
             {console.log('[Calendar渲染] calendarData存在?', !!calendarData, calendarData?.length)}
             {calendarData ? (
