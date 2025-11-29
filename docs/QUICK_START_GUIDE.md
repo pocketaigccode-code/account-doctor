@@ -393,7 +393,9 @@ export async function POST(request: NextRequest) {
 ### Step 3: A/B测试
 
 - [ ] **50%流量** 使用新架构
+
 - [ ] **监控指标**: 响应时间、错误率、转化率
+
 - [ ] **对比数据**:
   
   ```

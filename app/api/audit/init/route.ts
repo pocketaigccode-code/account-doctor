@@ -1,66 +1,21 @@
 /**
- * Fast Lane API - 真正的双速响应架构
- * 阶段1: 立即返回Apify原始数据 (0等待)
- * 阶段2: 异步AI增强数据 (后台处理)
+ * Fast Lane API - Serverless友好的快速响应
+ * 职责:
+ *   1. Apify爬取Instagram数据 (3-5秒)
+ *   2. 生成即时数据 (毫秒级)
+ *   3. 立即返回 (不等待AI)
+ *
+ * AI诊断通过SSE懒加载: /api/audit/[id]/diagnosis
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getCachedOrFetch, getExpiresAt } from '@/lib/cache/apify-cache'
-import { generateAnalystPrompt, PROFILE_ANALYST_SYSTEM_PROMPT } from '@/lib/ai/prompts/profile-analyst'
 import type { InstagramScanData } from '@/lib/scrapers/instagram'
 
-// 临时使用现有的callGemini (后续会优化)
-async function callGemini(prompt: string, systemPrompt: string): Promise<string> {
-  const DEERAPI_BASE_URL = process.env.DEER_API_BASE_URL || 'https://api.deerapi.com'
-  const DEERAPI_KEY = process.env.DEER_API_KEY || ''
-
-  console.log('[AI Call] 📤 发送请求到 DeerAPI')
-  console.log('[AI Call] 模型:', 'gpt-5.1')
-  console.log('[AI Call] System Prompt 长度:', systemPrompt.length, '字符')
-  console.log('[AI Call] User Prompt 长度:', prompt.length, '字符')
-  console.log('[AI Call] User Prompt 预览:', prompt.substring(0, 500))
-
-  const response = await fetch(`${DEERAPI_BASE_URL}/v1/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${DEERAPI_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-5.1',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: prompt }
-      ],
-      temperature: 0.7,
-      max_tokens: 4000,
-    }),
-  })
-
-  if (!response.ok) {
-    const errorText = await response.text()
-    console.error('[AI Call] ❌ DeerAPI 错误')
-    console.error('[AI Call] 状态码:', response.status)
-    console.error('[AI Call] 错误详情:', errorText)
-    console.error('[AI Call] 请求URL:', `${DEERAPI_BASE_URL}/v1/chat/completions`)
-    console.error('[AI Call] API Key 存在?:', !!DEERAPI_KEY, '长度:', DEERAPI_KEY?.length)
-    throw new Error(`DeerAPI调用失败: ${response.status} - ${errorText}`)
-  }
-
-  const data = await response.json()
-  const aiResponse = data.choices?.[0]?.message?.content || ''
-
-  console.log('[AI Call] 📥 收到响应')
-  console.log('[AI Call] 响应长度:', aiResponse.length, '字符')
-  console.log('[AI Call] 响应预览:', aiResponse.substring(0, 500))
-
-  return aiResponse
-}
-
 /**
- * 从Apify原始数据生成即时可用的数据
+ * 从Apify原始数据生成即时可用的数据 (Fast Lane)
  */
 function generateInstantData(scanData: InstagramScanData) {
   const { profile, recentPosts } = scanData
@@ -114,91 +69,6 @@ function generateInstantData(scanData: InstagramScanData) {
 
     // 行业类别 (优先使用businessCategoryName)
     category_label: profile.businessCategoryName || '本地商家'
-  }
-}
-
-/**
- * 后台异步处理: AI增强分析
- */
-async function processAIEnhancement(auditId: string, scanData: InstagramScanData) {
-  try {
-    console.log(`[AI Enhancement] Starting for audit: ${auditId}`)
-    console.log(`[AI Enhancement] 账号信息:`, {
-      username: scanData.profile.username,
-      followers: scanData.profile.followerCount,
-      posts: scanData.recentPosts.length,
-      lastPost: scanData.recentPosts[0]?.publishedAt
-    })
-
-    const prompt = generateAnalystPrompt(scanData)
-    const aiResponse = await callGemini(prompt, PROFILE_ANALYST_SYSTEM_PROMPT)
-
-    // 提取JSON
-    const jsonMatch = aiResponse.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      throw new Error('AI返回格式错误,无法解析JSON')
-    }
-
-    const parsed = JSON.parse(jsonMatch[0])
-
-    console.log('[AI Enhancement] 📊 解析后的数据:', {
-      category: parsed.profile_snapshot?.category_label,
-      missing: parsed.profile_snapshot?.missing_elements,
-      score: parsed.diagnosis_card?.score,
-      summary: parsed.diagnosis_card?.summary_title
-    })
-
-    const aiEnhancedData = {
-      category_label: parsed.profile_snapshot?.category_label || '未知',
-      missing_elements: parsed.profile_snapshot?.missing_elements || [],
-      diagnosis_card: parsed.diagnosis_card
-    }
-
-    // 验证必要字段
-    if (!aiEnhancedData.diagnosis_card || !aiEnhancedData.diagnosis_card.score) {
-      console.error('[AI Enhancement] ❌ 数据验证失败:', aiEnhancedData)
-      throw new Error('AI返回数据缺少必要字段')
-    }
-
-    // 获取现有的profile_snapshot
-    const { data: existingAudit } = await supabaseAdmin
-      .from('audits')
-      .select('profile_snapshot')
-      .eq('id', auditId)
-      .single()
-
-    // 更新数据库
-    await supabaseAdmin
-      .from('audits')
-      .update({
-        // 合并AI增强数据到profile_snapshot
-        profile_snapshot: {
-          ...(existingAudit?.profile_snapshot || {}),
-          category_label: aiEnhancedData.category_label,
-          missing_elements: aiEnhancedData.missing_elements
-        },
-        diagnosis_card: aiEnhancedData.diagnosis_card,
-        status: 'snapshot_ready',
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', auditId)
-
-    console.log(`[AI Enhancement] ✅ Completed for audit: ${auditId}`)
-
-  } catch (error: any) {
-    console.error('[AI Enhancement] Failed:', error)
-
-    // AI失败时标记为失败状态,不使用降级方案
-    await supabaseAdmin
-      .from('audits')
-      .update({
-        status: 'ai_failed',
-        error_code: 'AI_ENHANCEMENT_FAILED',
-        error_message: error.message || 'AI分析失败'
-      })
-      .eq('id', auditId)
-
-    throw error
   }
 }
 
@@ -273,31 +143,31 @@ export async function POST(request: NextRequest) {
           username: cleanUsername,
           apify_raw_data: scanData,
           profile_snapshot: instantData,  // 先保存即时数据
-          status: 'analyzing',  // 标记为分析中
+          status: 'snapshot_ready',  // ✅ 改为 snapshot_ready (Fast Lane完成)
           expires_at: getExpiresAt().toISOString()
         })
 
       console.log(`[Database] Saved initial data for: ${auditId}`)
 
       // ================================================
-      // Step 4: 等待AI增强完成 (Vercel上必须等待)
+      // 🔴 不再触发AI增强任务 (避免Serverless进程冻结问题)
       // ================================================
-      console.log(`[AI Enhancement] Starting synchronously for: ${auditId}`)
-      await processAIEnhancement(auditId, scanData)
-      console.log(`[AI Enhancement] Completed for: ${auditId}`)
+      // AI增强任务现在通过前端触发SSE连接来懒加载
+      // 详见: /api/audit/[auditId]/strategy
+      console.log(`[Fast Lane] AI enhancement will be triggered by SSE connection`)
     }
 
     // ================================================
-    // Step 5: 返回数据给前端
+    // Step 5: 返回数据给前端 (仅Fast Lane数据)
     // ================================================
     const totalTime = Date.now() - startTime
-    console.log(`[Audit Init] ✅ Returned data in ${totalTime}ms`)
+    console.log(`[Audit Init] ✅ Fast Lane completed in ${totalTime}ms`)
 
     return NextResponse.json({
       audit_id: auditId,
-      status: 'snapshot_ready',  // AI增强已完成
+      status: cacheHit ? 'snapshot_ready' : 'pending_diagnosis',  // 新增状态:等待诊断
       instant_data: instantData,
-      has_ai_enhancement: true,
+      has_diagnosis: cacheHit,  // 缓存命中则已有诊断数据
       created_at: new Date().toISOString(),
       cache_hit: cacheHit,
       expires_at: getExpiresAt().toISOString(),

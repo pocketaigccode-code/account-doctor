@@ -20,10 +20,11 @@ export default function AuditResultPage({ params }: PageProps) {
   const { auditId } = use(params)
   const [instantData, setInstantData] = useState<any>(null)
   const [diagnosisData, setDiagnosisData] = useState<any>(null)
-  const [slowData, setSlowData] = useState<any>(null)
+  const [strategyData, setStrategyData] = useState<any>(null)  // 策略数据(Persona+Mix+Audience)
+  const [day1Data, setDay1Data] = useState<any>(null)  // Day1内容
+  const [calendarData, setCalendarData] = useState<any>(null)  // 30天日历
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [pollingCount, setPollingCount] = useState(0)
   const [aiFailed, setAiFailed] = useState(false)
 
   // 阶段1: 获取即时数据
@@ -65,46 +66,44 @@ export default function AuditResultPage({ params }: PageProps) {
       })
   }, [auditId])
 
-  // 阶段2: 轮询AI增强数据 (如果诊断数据未就绪)
+  // 阶段2: SSE连接获取AI诊断数据 (如果诊断数据未就绪)
   useEffect(() => {
-    if (!instantData || diagnosisData || pollingCount >= 15) return  // 增加到15次
+    if (!instantData || diagnosisData) return
 
-    console.log('🔄 [结果页] 开始轮询AI增强数据...')
+    console.log('🔄 [结果页] 建立SSE连接获取诊断数据...')
 
-    const pollInterval = setInterval(() => {
-      console.log(`🔄 [结果页] 轮询第 ${pollingCount + 1}/15 次...`)
+    const sse = new EventSource(`/api/audit/${auditId}/diagnosis`)
 
-      fetch(`/api/audit/${auditId}/status`)
-        .then(res => res.json())
-        .then(data => {
-          console.log('📥 [结果页] 轮询响应:', data)
+    sse.addEventListener('status', (e) => {
+      const data = JSON.parse(e.data)
+      console.log(`📡 [结果页] SSE状态: ${data.phase}, 进度: ${data.progress}%`)
+    })
 
-          // 检查AI是否失败
-          if (data.status === 'ai_failed') {
-            console.error('❌ [结果页] AI分析失败,停止轮询')
-            setAiFailed(true)
-            clearInterval(pollInterval)
-            return
-          }
+    sse.addEventListener('complete', (e) => {
+      const data = JSON.parse(e.data)
+      console.log('✅ [结果页] 诊断数据已就绪!', data)
 
-          if (data.diagnosis_card) {
-            console.log('✅ [结果页] AI增强数据已就绪!')
-            console.log('📊 [结果页] 更新后的 Diagnosis Card:', data.diagnosis_card)
+      // 更新诊断数据
+      setInstantData(data.profile_snapshot)
+      setDiagnosisData(data.diagnosis_card)
+      sse.close()
+    })
 
-            // AI增强数据已就绪
-            setInstantData(data.profile_snapshot)  // 更新完整数据
-            setDiagnosisData(data.diagnosis_card)
-            clearInterval(pollInterval)
-          }
-          setPollingCount(prev => prev + 1)
-        })
-        .catch(err => {
-          console.error('❌ [结果页] 轮询失败:', err)
-        })
-    }, 5000)  // 每5秒轮询一次
+    sse.addEventListener('error', (e) => {
+      console.error('❌ [结果页] SSE连接错误')
+      setAiFailed(true)
+      sse.close()
+    })
 
-    return () => clearInterval(pollInterval)
-  }, [auditId, instantData, diagnosisData, pollingCount])
+    sse.addEventListener('ping', () => {
+      console.log('💓 [结果页] SSE心跳')
+    })
+
+    return () => {
+      console.log('🔌 [结果页] 关闭SSE连接')
+      sse.close()
+    }
+  }, [auditId, instantData, diagnosisData])
 
   if (loading) {
     return (
@@ -168,12 +167,32 @@ export default function AuditResultPage({ params }: PageProps) {
           <DiagnosisCardSkeleton />
         )}
 
-        {/* Slow Lane Components - SSE异步加载 (等待诊断数据准备好后再加载) */}
-        {diagnosisData && <StrategySection auditId={auditId} onDataLoaded={setSlowData} />}
+        {/* Slow Lane Components - SSE异步加载 */}
+        {diagnosisData && (
+          <StrategySection
+            auditId={auditId}
+            onDataLoaded={setStrategyData}
+            onDay1Loaded={setDay1Data}
+            onCalendarLoaded={setCalendarData}
+          />
+        )}
 
-        {/* 30天日历 - Slow Lane完成后显示 */}
-        {slowData?.execution_calendar && (
-          <ExecutionCalendar calendar={slowData.execution_calendar} />
+        {/* Day 1内容预览 - 独立模块 (Audience显示后立即显示骨架屏) */}
+        {diagnosisData && strategyData?.target_audience && (
+          day1Data ? (
+            <Day1Preview day1={day1Data} />
+          ) : (
+            <Day1Skeleton />
+          )
+        )}
+
+        {/* 30天日历 - 独立模块 (Day1显示后立即显示骨架屏) */}
+        {diagnosisData && day1Data && (
+          calendarData ? (
+            <ExecutionCalendar calendar={{ day_1_detail: day1Data, month_plan: calendarData }} />
+          ) : (
+            <CalendarSkeleton />
+          )
         )}
       </main>
     </div>
@@ -208,6 +227,146 @@ function DiagnosisCardAIFailed() {
 }
 
 /**
+ * Day1内容预览组件
+ */
+function Day1Preview({ day1 }: { day1: any }) {
+  return (
+    <div className="bg-white border border-sand-200 p-10 shadow-sm">
+      <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">
+        内容预览与分析
+      </h2>
+
+      <div className="grid md:grid-cols-2 gap-10">
+        {/* 左: 图片预览 */}
+        <div>
+          <div className="relative aspect-square bg-gradient-to-br from-sand-100 to-sand-200 border border-sand-200 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <svg className="w-24 h-24 text-charcoal-600 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div className="relative z-10 bg-white border-2 border-charcoal-900 px-6 py-3">
+              <span className="font-serif text-xl font-bold text-charcoal-900">LOGO</span>
+            </div>
+          </div>
+          <div className="mt-4 bg-sand-50 border border-sand-200 p-4">
+            <h4 className="font-sans text-xs font-bold text-charcoal-900 mb-2">生图提示词</h4>
+            <p className="font-sans text-xs text-charcoal-800 leading-relaxed">
+              {day1.image_gen_prompt}
+            </p>
+          </div>
+        </div>
+
+        {/* 右: 文案 */}
+        <div className="space-y-6">
+          <div>
+            <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-3">生成文案</h3>
+            <div className="bg-sand-50 border border-sand-200 p-5">
+              <p className="font-sans text-sm text-charcoal-900 leading-relaxed whitespace-pre-wrap">
+                {day1.caption}
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-3">推荐标签</h3>
+            <div className="flex flex-wrap gap-2">
+              {day1.hashtags.map((tag: string, i: number) => (
+                <span key={i} className="bg-sand-100 border border-sand-200 px-3 py-1.5 font-sans text-xs text-charcoal-900">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-sage/10 border-l-4 border-sage p-5">
+            <h4 className="font-sans text-sm font-bold text-charcoal-900 mb-2">AI 分析</h4>
+            <p className="font-sans text-sm text-charcoal-800 leading-relaxed">
+              这篇内容融合了品牌故事与行动召唤,通过真诚的语调建立情感连接。发布时最佳时间为周二或周三的18:00-20:00,此时段受众活跃度最高。
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Day1骨架屏
+ */
+function Day1Skeleton() {
+  return (
+    <div className="bg-white border border-sand-200 p-10 shadow-sm">
+      <div className="h-8 bg-sand-200 w-1/3 mb-8 animate-pulse"></div>
+
+      {/* 双层转圈动画 */}
+      <div className="flex flex-col items-center justify-center py-16">
+        <div className="relative w-40 h-40">
+          <div className="absolute inset-0 border-[14px] border-sand-200 rounded-full"></div>
+          <div className="absolute inset-0 border-[14px] border-transparent border-t-[#6fa88e] rounded-full animate-spin"></div>
+          <div className="absolute inset-5 border-[12px] border-sand-100 rounded-full"></div>
+          <div className="absolute inset-5 border-[12px] border-transparent border-t-[#e06744] rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '2s' }}></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-3 h-3 bg-charcoal-900 rounded-full animate-bounce"></div>
+          </div>
+        </div>
+        <p className="font-serif text-xl font-bold text-charcoal-900 mt-8 mb-2">正在创作Day 1爆款内容</p>
+        <p className="font-sans text-sm text-charcoal-600">AI正在为您撰写精致文案与标签...</p>
+      </div>
+
+      {/* 骨架网格 */}
+      <div className="grid md:grid-cols-2 gap-10 mt-8 opacity-20 animate-pulse">
+        <div className="aspect-square bg-sand-200"></div>
+        <div className="space-y-4">
+          <div className="h-6 bg-sand-200 w-full"></div>
+          <div className="h-4 bg-sand-200 w-3/4"></div>
+          <div className="h-4 bg-sand-200 w-full"></div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * 日历骨架屏
+ */
+function CalendarSkeleton() {
+  return (
+    <div className="bg-white border border-sand-200 p-10 shadow-sm">
+      <div className="h-8 bg-sand-200 w-1/3 mb-8 animate-pulse"></div>
+
+      {/* 双层转圈动画 */}
+      <div className="flex flex-col items-center justify-center py-16">
+        <div className="relative w-40 h-40">
+          {/* 外圈 (更粗更明显) */}
+          <div className="absolute inset-0 border-[14px] border-sand-200 rounded-full"></div>
+          <div className="absolute inset-0 border-[14px] border-transparent border-t-[#6fa88e] rounded-full animate-spin"></div>
+          {/* 内圈 (更粗更明显) */}
+          <div className="absolute inset-5 border-[12px] border-sand-100 rounded-full"></div>
+          <div className="absolute inset-5 border-[12px] border-transparent border-t-[#e06744] rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '2s' }}></div>
+          {/* 中心 */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-3 h-3 bg-charcoal-900 rounded-full animate-bounce"></div>
+          </div>
+        </div>
+        <p className="font-serif text-xl font-bold text-charcoal-900 mt-8 mb-2">正在生成30天内容日历</p>
+        <p className="font-sans text-sm text-charcoal-600">AI正在为您规划完整的月度内容策略...</p>
+      </div>
+
+      {/* 日历骨架网格 */}
+      <div className="grid grid-cols-7 gap-4 mt-8 opacity-30 animate-pulse">
+        {Array.from({ length: 7 }).map((_, i) => (
+          <div key={i} className="border border-sand-200 p-3 bg-sand-50">
+            <div className="h-3 bg-sand-200 w-12 mb-2"></div>
+            <div className="aspect-square bg-sand-200"></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/**
  * DiagnosisCard骨架屏
  */
 function DiagnosisCardSkeleton() {
@@ -215,36 +374,46 @@ function DiagnosisCardSkeleton() {
     <div className="bg-white border border-sand-200 p-10 mb-8 shadow-sm">
       <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-8">诊断结果</h2>
 
-      <div className="flex items-start gap-16">
-        {/* 左: 评分圆环骨架 */}
-        <div className="flex-shrink-0 text-center">
-          <div className="relative w-44 h-44 mb-4 animate-pulse">
-            <div className="w-44 h-44 rounded-full border-12 border-sand-200"></div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-5 h-5 border-2 border-charcoal-300 border-t-charcoal-600 rounded-full animate-spin"></div>
+      {/* 中心双层转圈动画 */}
+      <div className="flex flex-col items-center justify-center py-16">
+        <div className="relative w-48 h-48">
+          {/* 外圈 */}
+          <div className="absolute inset-0 border-[14px] border-sand-200 rounded-full"></div>
+          <div className="absolute inset-0 border-[14px] border-transparent border-t-[#6fa88e] rounded-full animate-spin"></div>
+          {/* 内圈 */}
+          <div className="absolute inset-6 border-[12px] border-sand-100 rounded-full"></div>
+          <div className="absolute inset-6 border-[12px] border-transparent border-t-[#e06744] rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '2s' }}></div>
+          {/* 中心 */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-4 h-4 bg-charcoal-900 rounded-full mb-2 mx-auto animate-bounce"></div>
+              <p className="font-sans text-xs text-charcoal-600 font-semibold">AI 分析中</p>
             </div>
           </div>
-          <div className="inline-block bg-sand-100 px-4 py-1.5 border border-sand-200 animate-pulse">
+        </div>
+        <p className="font-serif text-xl font-bold text-charcoal-900 mt-8 mb-2">正在生成诊断评分</p>
+        <p className="font-sans text-sm text-charcoal-600">AI正在分析账号的5大维度...</p>
+      </div>
+
+      {/* 骨架内容 */}
+      <div className="flex items-start gap-16 mt-12 opacity-20 animate-pulse">
+        <div className="flex-shrink-0 text-center">
+          <div className="w-44 h-44 rounded-full border-12 border-sand-200 mb-4"></div>
+          <div className="inline-block bg-sand-100 px-4 py-1.5 border border-sand-200">
             <span className="font-sans text-sm font-semibold text-charcoal-600">分析中...</span>
           </div>
         </div>
 
-        {/* 右: 问题列表骨架 */}
-        <div className="flex-1">
-          <div className="h-6 bg-sand-100 w-3/4 mb-2 animate-pulse"></div>
-          <div className="h-4 bg-sand-50 w-full mb-6 animate-pulse"></div>
-
-          <div className="space-y-3">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="flex gap-3 items-start bg-sand-50 border border-sand-200 p-3 animate-pulse">
-                <div className="flex-shrink-0 w-6 h-6 bg-sand-200"></div>
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-sand-200 w-full"></div>
-                  <div className="h-4 bg-sand-200 w-4/5"></div>
-                </div>
+        <div className="flex-1 space-y-3">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="flex gap-3 items-start bg-sand-50 border border-sand-200 p-3">
+              <div className="flex-shrink-0 w-6 h-6 bg-sand-200"></div>
+              <div className="flex-1 space-y-2">
+                <div className="h-4 bg-sand-200 w-full"></div>
+                <div className="h-4 bg-sand-200 w-4/5"></div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

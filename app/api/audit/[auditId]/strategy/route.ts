@@ -1,27 +1,39 @@
 /**
- * Slow Lane SSE API - 懒加载AI策略生成
- * 职责: 当前端建立SSE连接时,才开始执行AI生成
- * ⚠️ Serverless关键: SSE长连接保持进程存活
+ * Strategy SSE API - 串行执行版 (打字机效果)
+ * 架构: 5个模块依次执行,每完成一个立即推送
+ * 总耗时: 36秒 (但每5秒用户看到新内容)
+ * ⚠️ 一次只发一个AI请求给DeerAPI,避免并发限流
  */
 
 import { NextRequest } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { generateStrategyPrompt, STRATEGIC_DIRECTOR_SYSTEM_PROMPT } from '@/lib/ai/prompts/strategic-director'
+import {
+  PERSONA_SYSTEM_PROMPT,
+  AUDIENCE_SYSTEM_PROMPT,
+  CONTENT_MIX_SYSTEM_PROMPT,
+  DAY1_SYSTEM_PROMPT,
+  MONTH_PLAN_SYSTEM_PROMPT,
+  generatePersonaPrompt,
+  generateAudiencePrompt,
+  generateContentMixPrompt,
+  generateDay1Prompt,
+  generateMonthPlanPrompt
+} from '@/lib/ai/prompts/micro-strategy'
 
-// 🚨 Serverless配置 - 关键!
-export const runtime = 'nodejs'      // 使用Node.js运行时(非Edge)
-export const maxDuration = 60        // 最大执行60秒 (Vercel Pro需要)
+// 🚨 Serverless配置
+export const runtime = 'nodejs'
+export const maxDuration = 60
 
-// 临时DeerAPI客户端
-async function callGemini(prompt: string, systemPrompt: string): Promise<string> {
+// DeerAPI客户端 - 支持动态max_tokens
+async function callGemini(
+  prompt: string,
+  systemPrompt: string,
+  maxTokens: number = 1000
+): Promise<string> {
   const DEERAPI_BASE_URL = process.env.DEER_API_BASE_URL || 'https://api.deerapi.com'
   const DEERAPI_KEY = process.env.DEER_API_KEY || ''
 
-  console.log('[Strategy AI Call] 📤 发送请求到 DeerAPI')
-  console.log('[Strategy AI Call] 模型:', 'gpt-5.1')
-  console.log('[Strategy AI Call] System Prompt 长度:', systemPrompt.length, '字符')
-  console.log('[Strategy AI Call] User Prompt 长度:', prompt.length, '字符')
-  console.log('[Strategy AI Call] User Prompt 预览:', prompt.substring(0, 500))
+  console.log('[AI Call] 📤 发送请求到DeerAPI, max_tokens:', maxTokens)
 
   const response = await fetch(`${DEERAPI_BASE_URL}/v1/chat/completions`, {
     method: 'POST',
@@ -36,28 +48,67 @@ async function callGemini(prompt: string, systemPrompt: string): Promise<string>
         { role: 'user', content: prompt }
       ],
       temperature: 0.7,
-      max_tokens: 4000,  // 限制到4000以加快生成速度,避免超时
+      max_tokens: maxTokens,
     }),
   })
 
   if (!response.ok) {
     const errorText = await response.text()
-    console.error('[Strategy AI Call] ❌ DeerAPI 错误')
-    console.error('[Strategy AI Call] 状态码:', response.status)
-    console.error('[Strategy AI Call] 错误详情:', errorText)
-    console.error('[Strategy AI Call] 请求URL:', `${DEERAPI_BASE_URL}/v1/chat/completions`)
-    console.error('[Strategy AI Call] API Key 存在?:', !!DEERAPI_KEY, '长度:', DEERAPI_KEY?.length)
-    throw new Error(`DeerAPI failed: ${response.status} - ${errorText}`)
+    console.error('[AI Call] ❌ DeerAPI错误:', response.status, errorText)
+    throw new Error(`DeerAPI failed: ${response.status}`)
   }
 
   const data = await response.json()
   const aiResponse = data.choices?.[0]?.message?.content || ''
 
-  console.log('[Strategy AI Call] 📥 收到响应')
-  console.log('[Strategy AI Call] 响应长度:', aiResponse.length, '字符')
-  console.log('[Strategy AI Call] 响应预览:', aiResponse.substring(0, 500))
+  console.log('[AI Call] 📥 收到响应,长度:', aiResponse.length)
+
+  // 🚨 检查空响应
+  if (!aiResponse || aiResponse.trim().length === 0) {
+    console.error('[AI Call] ❌ 收到空响应!完整data:', JSON.stringify(data))
+    throw new Error('AI返回空响应,可能超时或配额耗尽')
+  }
 
   return aiResponse
+}
+
+// 解析JSON响应 - 严格清洗
+function parseJSON(aiResponse: string, moduleName: string = ''): any {
+  console.log(`[parseJSON ${moduleName}] 原始响应:`, aiResponse.substring(0, 500))
+
+  // 尝试直接解析(如果AI严格遵守了规则)
+  try {
+    const trimmed = aiResponse.trim()
+    if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+      return JSON.parse(trimmed)
+    }
+  } catch (e) {
+    console.log(`[parseJSON ${moduleName}] 直接解析失败,尝试提取...`)
+  }
+
+  // 提取JSON(处理AI加了额外文本的情况)
+  let jsonMatch
+
+  // 优先匹配数组
+  jsonMatch = aiResponse.match(/\[[\s\S]*?\](?=\s*$|[\r\n]|```)/m)
+
+  if (!jsonMatch) {
+    // 匹配对象
+    jsonMatch = aiResponse.match(/\{[\s\S]*?\}(?=\s*$|[\r\n]|```)/m)
+  }
+
+  if (!jsonMatch) {
+    console.error(`[parseJSON ${moduleName}] 无法提取JSON,原始响应:`, aiResponse)
+    throw new Error(`AI返回格式错误,无法解析JSON (模块: ${moduleName})`)
+  }
+
+  try {
+    return JSON.parse(jsonMatch[0])
+  } catch (e: any) {
+    console.error(`[parseJSON ${moduleName}] JSON解析失败:`, e.message)
+    console.error(`[parseJSON ${moduleName}] 提取的内容:`, jsonMatch[0])
+    throw new Error(`JSON解析失败: ${e.message}`)
+  }
 }
 
 export async function GET(
@@ -67,21 +118,16 @@ export async function GET(
   const { auditId } = await context.params
   const startTime = Date.now()
 
-  console.log(`[SSE] Connection established for audit: ${auditId}`)
+  console.log(`[SSE Strategy] Connection established for: ${auditId}`)
 
-  // ================================================
-  // 创建SSE响应流 (保持连接活跃)
-  // ================================================
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
     async start(controller) {
-      // 辅助函数: 发送SSE事件
       const sendEvent = (event: string, data: any) => {
-        const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
-        controller.enqueue(encoder.encode(message))
+        controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`))
       }
 
-      // 心跳机制 (防止Vercel超时)
+      // 心跳机制
       const heartbeat = setInterval(() => {
         sendEvent('ping', { timestamp: Date.now() })
       }, 15000)
@@ -100,149 +146,203 @@ export async function GET(
 
         if (error || !audit) {
           clearInterval(heartbeat)
-          sendEvent('error', { error: 'AUDIT_NOT_FOUND', message: '诊断记录不存在' })
+          sendEvent('error', { error: 'AUDIT_NOT_FOUND' })
           controller.close()
           return
         }
 
         // ================================================
-        // Step 2: 检查是否已有缓存策略 (情况A)
+        // Step 2: 检查完整缓存
         // ================================================
         if (audit.strategy_section && audit.execution_calendar) {
-          console.log(`[SSE] ✅ Cache hit - returning existing strategy`)
-
+          console.log(`[SSE Strategy] ✅ Full cache hit`)
           clearInterval(heartbeat)
           sendEvent('complete', {
             strategy_section: audit.strategy_section,
             execution_calendar: audit.execution_calendar,
-            cached: true,
-            generation_time_ms: 0
+            cached: true
           })
           controller.close()
           return
         }
 
         // ================================================
-        // Step 3: 情况B - 无缓存,开始AI生成 (懒加载核心)
+        // Step 3: 准备上下文
         // ================================================
-        console.log(`[SSE] ❌ No cache - starting AI generation`)
-
-        // 标记为"分析中"
-        await supabaseAdmin
-          .from('audits')
-          .update({ status: 'analyzing', progress: 10 })
-          .eq('id', auditId)
-
-        sendEvent('status', { phase: 'analyzing', progress: 10 })
-
-        // ================================================
-        // Step 4: AI Prompt Set 2 (Strategic Director)
-        // ================================================
-        const profileSnapshot = audit.profile_snapshot
-        const diagnosisCard = audit.diagnosis_card
-        const rawBio = audit.apify_raw_data?.profile?.biography || ''
-        const category = profileSnapshot?.category_label || '本地商家'
-
-        // 验证必要数据是否存在
-        if (!diagnosisCard || !diagnosisCard.score) {
-          console.error('[SSE] Missing diagnosis_card or score, cannot proceed with strategy generation')
-          clearInterval(heartbeat)
-          sendEvent('error', {
-            error: 'AI_GENERATION_FAILED',
-            message: 'Diagnosis data not ready, please wait or refresh',
-            fallback_available: false
-          })
-          controller.close()
-          return
+        const context = {
+          category: audit.profile_snapshot?.category_label || '本地商家',
+          bio: audit.apify_raw_data?.profile?.biography || '',
+          diagnosis_summary: audit.diagnosis_card?.summary_title || '需要改进'
         }
 
-        const promptText = generateStrategyPrompt(
-          { profile_snapshot: profileSnapshot, diagnosis_card: diagnosisCard },
-          rawBio
+        console.log(`[SSE Strategy] 🔄 Starting serial execution`)
+
+        // ================================================
+        // Module 1: Persona (串行,5秒)
+        // ================================================
+        sendEvent('status', { phase: 'generating_persona', progress: 10 })
+        console.log('[Module 1] 📤 Generating Persona...')
+
+        const personaResponse = await callGemini(
+          generatePersonaPrompt(context),
+          PERSONA_SYSTEM_PROMPT
         )
+        const personaData = parseJSON(personaResponse, 'Persona')
 
-        sendEvent('status', { phase: 'generating_strategy', progress: 30 })
+        console.log('[Module 1] ✅ Persona completed:', personaData)
 
-        // 🔥 关键: SSE连接保持进程存活,AI可以安全执行
-        const aiResponse = await callGemini(
-          promptText,
-          STRATEGIC_DIRECTOR_SYSTEM_PROMPT
+        // 立即推送给前端
+        sendEvent('partial_update', {
+          brand_persona: personaData,
+          progress: 20
+        })
+
+        // ================================================
+        // Module 2: Content Mix (串行,3秒) - 提前到第2位
+        // ================================================
+        sendEvent('status', { phase: 'planning_content_mix', progress: 25 })
+        console.log('[Module 2] 📤 Planning Content Mix...')
+
+        const mixResponse = await callGemini(
+          generateContentMixPrompt(context),
+          CONTENT_MIX_SYSTEM_PROMPT
         )
+        const mixData = parseJSON(mixResponse, 'ContentMix')
 
-        console.log(`[Strategy] AI 响应长度:`, aiResponse.length)
-        console.log(`[Strategy] 响应预览:`, aiResponse.substring(0, 200))
+        console.log('[Module 2] ✅ Content Mix completed:', Array.isArray(mixData), mixData)
 
-        // 解析 JSON
-        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/)
-        if (!jsonMatch) {
-          throw new Error('AI返回格式错误,无法解析JSON')
-        }
+        const mixArray = Array.isArray(mixData) ? mixData : (mixData.mix || [])
 
-        const strategyData = JSON.parse(jsonMatch[0])
-
-        // 验证必要字段
-        if (!strategyData.strategy_section || !strategyData.execution_calendar) {
-          throw new Error('AI返回数据缺少必要字段')
-        }
-
-        // 更新进度
-        sendEvent('status', { phase: 'finalizing', progress: 80 })
+        // 立即推送
+        sendEvent('partial_update', {
+          content_mix_chart: mixArray,
+          progress: 35
+        })
 
         // ================================================
-        // Step 5: 保存到数据库 (持久化)
+        // Module 3: Audience (串行,5秒) - 移到第3位
         // ================================================
-        const generationTime = Date.now() - startTime
+        sendEvent('status', { phase: 'analyzing_audience', progress: 40 })
+        console.log('[Module 3] 📤 Analyzing Audience...')
+
+        const audienceResponse = await callGemini(
+          generateAudiencePrompt(context),
+          AUDIENCE_SYSTEM_PROMPT
+        )
+        const audienceData = parseJSON(audienceResponse, 'Audience')
+
+        console.log('[Module 3] ✅ Audience completed:', Array.isArray(audienceData), audienceData)
+
+        // 立即推送
+        sendEvent('partial_update', {
+          target_audience: Array.isArray(audienceData) ? audienceData : [audienceData],
+          progress: 55
+        })
+
+        // ================================================
+        // Module 4: Day 1 Creative (串行,8秒)
+        // ================================================
+        sendEvent('status', { phase: 'creating_day1', progress: 60 })
+        console.log('[Module 4] 📤 Creating Day 1 Content...')
+
+        const day1Response = await callGemini(
+          generateDay1Prompt({
+            category: context.category,
+            bio: context.bio,
+            persona: personaData
+          }),
+          DAY1_SYSTEM_PROMPT,
+          2000  // ✅ Day1需要更多tokens (450-500字文案)
+        )
+        const day1Data = parseJSON(day1Response, 'Day1')
+
+        console.log('[Module 4] ✅ Day 1 completed:', day1Data)
+
+        // 立即推送
+        sendEvent('partial_update', {
+          day_1_detail: day1Data,
+          progress: 75
+        })
+
+        // ================================================
+        // Module 5: Month Plan (串行,15秒)
+        // ================================================
+        sendEvent('status', { phase: 'building_month_plan', progress: 80 })
+        console.log('[Module 5] 📤 Building Month Plan...')
+
+        const monthPlanResponse = await callGemini(
+          generateMonthPlanPrompt({
+            category: context.category,
+            content_mix: mixArray,
+            persona: personaData
+          }),
+          MONTH_PLAN_SYSTEM_PROMPT,
+          2000  // ✅ MonthPlan需要更多tokens (29天计划)
+        )
+        const monthPlanData = parseJSON(monthPlanResponse, 'MonthPlan')
+
+        console.log('[Module 5] ✅ Month Plan completed')
+        console.log('[Module 5] Month plan length:', monthPlanData?.length)
+
+        // ================================================
+        // 保存完整结果到数据库
+        // ================================================
+        const totalTime = Date.now() - startTime
+
+        const finalStrategySection = {
+          brand_persona: personaData,
+          target_audience: Array.isArray(audienceData) ? audienceData : [audienceData],
+          content_mix_chart: mixArray
+        }
+
+        const finalExecutionCalendar = {
+          day_1_detail: day1Data,
+          month_plan: monthPlanData
+        }
 
         await supabaseAdmin
           .from('audits')
           .update({
-            strategy_section: strategyData.strategy_section,
-            execution_calendar: strategyData.execution_calendar,
+            strategy_section: finalStrategySection,
+            execution_calendar: finalExecutionCalendar,
             status: 'completed',
             progress: 100,
             ai_model_used: 'gpt-5.1',
-            generation_time_ms: generationTime
+            generation_time_ms: totalTime
           })
           .eq('id', auditId)
 
         // ================================================
-        // Step 6: 发送完成事件
+        // 推送完成事件
         // ================================================
         clearInterval(heartbeat)
         sendEvent('complete', {
-          strategy_section: strategyData.strategy_section,
-          execution_calendar: strategyData.execution_calendar,
+          strategy_section: finalStrategySection,
+          execution_calendar: finalExecutionCalendar,
           cached: false,
-          generation_time_ms: generationTime
+          generation_time_ms: totalTime,
+          progress: 100
         })
 
-        console.log(`[SSE] ✅ Strategy completed in ${generationTime}ms`)
+        console.log(`[SSE Strategy] ✅ Serial execution completed in ${totalTime}ms`)
         controller.close()
 
       } catch (error: any) {
-        console.error('[SSE] Fatal error:', error)
-
-        // 清理心跳
+        console.error('[SSE Strategy] Fatal error:', error)
         clearInterval(heartbeat)
 
-        // 保存错误状态
-        supabaseAdmin
+        await supabaseAdmin
           .from('audits')
           .update({
-            status: 'failed',
-            error_code: 'AI_TIMEOUT',
+            status: 'strategy_failed',
+            error_code: 'AI_STRATEGY_FAILED',
             error_message: error.message
           })
           .eq('id', auditId)
-          .then(() => {
-            // 忽略错误
-          })
 
-        // 推送错误事件
         sendEvent('error', {
-          error: 'AI_GENERATION_FAILED',
-          message: error.message,
-          fallback_available: true
+          error: 'AI_STRATEGY_FAILED',
+          message: error.message
         })
 
         controller.close()
@@ -255,7 +355,7 @@ export async function GET(
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-transform',
       'Connection': 'keep-alive',
-      'X-Accel-Buffering': 'no',  // 禁用Nginx缓冲
+      'X-Accel-Buffering': 'no',
     }
   })
 }

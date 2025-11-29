@@ -112,11 +112,11 @@ export function ExecutionCalendar({ calendar }: ExecutionCalendarProps) {
 
           {/* Day 2-7 - 已规划 */}
           {calendar.month_plan.slice(0, 6).map((day) => (
-            <div key={day.day} className="border border-sand-200 p-4 bg-sand-50 opacity-60">
-              <div className="font-sans text-xs font-bold text-charcoal-600 mb-2">第 {day.day} 天</div>
-              <div className="aspect-square bg-sand-200 mb-2 blur-sm"></div>
-              <h4 className="font-sans text-xs font-semibold text-charcoal-600 mb-1">已规划</h4>
-              <p className="font-sans text-xs text-charcoal-600 line-clamp-2">{day.theme}</p>
+            <div key={day.day} className="border border-sand-200 p-4 bg-sand-50">
+              <div className="font-sans text-xs font-bold text-charcoal-900 mb-2">第 {day.day} 天</div>
+              <div className="aspect-square bg-sand-200 mb-2"></div>
+              <h4 className="font-sans text-xs font-semibold text-sage mb-1">✓ 已规划</h4>
+              <p className="font-sans text-xs text-charcoal-800 line-clamp-2">{day.theme}</p>
             </div>
           ))}
         </div>
@@ -124,10 +124,52 @@ export function ExecutionCalendar({ calendar }: ExecutionCalendarProps) {
         {/* Day 8-14 */}
         <div className="grid grid-cols-7 gap-4 mb-8">
           {calendar.month_plan.slice(6, 13).map((day) => (
-            <div key={day.day} className="border border-sand-200 p-3 bg-sand-50 opacity-40">
-              <div className="font-sans text-xs text-charcoal-600 mb-2">第 {day.day} 天</div>
-              <div className="aspect-square bg-sand-200 blur-md"></div>
+            <div key={day.day} className="border border-sand-200 p-3 bg-sand-50">
+              <div className="font-sans text-xs font-bold text-charcoal-900 mb-2">第 {day.day} 天</div>
+              <div className="aspect-square bg-sand-200 mb-1"></div>
+              <h4 className="font-sans text-xs font-semibold text-sage mb-1">✓ 已规划</h4>
+              <p className="font-sans text-xs text-charcoal-800 line-clamp-2">{day.theme}</p>
             </div>
+          ))}
+        </div>
+
+        {/* Day 15-21 */}
+        <div className="grid grid-cols-7 gap-4 mb-8">
+          {calendar.month_plan.slice(13, 20).map((day) => (
+            <div key={day.day} className="border border-sand-200 p-3 bg-sand-50">
+              <div className="font-sans text-xs font-bold text-charcoal-900 mb-2">第 {day.day} 天</div>
+              <div className="aspect-square bg-sand-200 mb-1"></div>
+              <h4 className="font-sans text-xs font-semibold text-sage mb-1">✓ 已规划</h4>
+              <p className="font-sans text-xs text-charcoal-800 line-clamp-2">{day.theme}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Day 22-28 */}
+        <div className="grid grid-cols-7 gap-4 mb-8">
+          {calendar.month_plan.slice(20, 27).map((day) => (
+            <div key={day.day} className="border border-sand-200 p-3 bg-sand-50">
+              <div className="font-sans text-xs font-bold text-charcoal-900 mb-2">第 {day.day} 天</div>
+              <div className="aspect-square bg-sand-200 mb-1"></div>
+              <h4 className="font-sans text-xs font-semibold text-sage mb-1">✓ 已规划</h4>
+              <p className="font-sans text-xs text-charcoal-800 line-clamp-2">{day.theme}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Day 29-30 */}
+        <div className="grid grid-cols-7 gap-4 mb-8">
+          {calendar.month_plan.slice(27, 29).map((day) => (
+            <div key={day.day} className="border border-sand-200 p-3 bg-sand-50">
+              <div className="font-sans text-xs font-bold text-charcoal-900 mb-2">第 {day.day} 天</div>
+              <div className="aspect-square bg-sand-200 mb-1"></div>
+              <h4 className="font-sans text-xs font-semibold text-sage mb-1">✓ 已规划</h4>
+              <p className="font-sans text-xs text-charcoal-800 line-clamp-2">{day.theme}</p>
+            </div>
+          ))}
+          {/* 填充空格 */}
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={`empty-${i}`} className="invisible"></div>
           ))}
         </div>
 

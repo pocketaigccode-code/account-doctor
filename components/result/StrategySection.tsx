@@ -6,6 +6,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
+
+const CHART_COLORS = [
+  '#8DA399', '#d97757', '#3B82F6', '#F59E0B', '#8B5CF6',
+  '#EC4899', '#10B981', '#6366F1', '#F97316', '#14B8A6'
+]
 
 interface StrategyData {
   strategy_text?: string  // 纯文本策划案(最新格式)
@@ -44,9 +50,11 @@ interface StrategyData {
 interface StrategySectionProps {
   auditId: string
   onDataLoaded?: (data: StrategyData) => void
+  onDay1Loaded?: (day1: any) => void
+  onCalendarLoaded?: (calendar: any) => void
 }
 
-export function StrategySection({ auditId, onDataLoaded }: StrategySectionProps) {
+export function StrategySection({ auditId, onDataLoaded, onDay1Loaded, onCalendarLoaded }: StrategySectionProps) {
   const [strategy, setStrategy] = useState<StrategyData | null>(null)
   const [progress, setProgress] = useState(0)
   const [phase, setPhase] = useState('loading')
@@ -63,6 +71,42 @@ export function StrategySection({ auditId, onDataLoaded }: StrategySectionProps)
       setPhase(data.phase)
       setProgress(data.progress)
       console.log(`[SSE] Progress: ${data.progress}% - ${data.phase}`)
+    })
+
+    // 监听增量更新 (打字机效果)
+    eventSource.addEventListener('partial_update', (e) => {
+      const data = JSON.parse(e.data)
+      console.log(`[SSE] Partial update - Progress: ${data.progress}%`, data)
+
+      setStrategy(prev => {
+        const current = prev || { strategy_section: {}, execution_calendar: {} }
+        return {
+          ...current,
+          strategy_section: {
+            ...current.strategy_section,
+            ...(data.brand_persona && { brand_persona: data.brand_persona }),
+            ...(data.target_audience && { target_audience: data.target_audience }),
+            ...(data.content_mix_chart && { content_mix_chart: data.content_mix_chart })
+          },
+          execution_calendar: {
+            ...current.execution_calendar,
+            ...(data.day_1_detail && { day_1_detail: data.day_1_detail }),
+            ...(data.month_plan && { month_plan: data.month_plan })
+          }
+        }
+      })
+
+      setProgress(data.progress)
+
+      // 触发回调
+      if (data.day_1_detail && onDay1Loaded) {
+        console.log('[SSE] 触发Day1回调')
+        onDay1Loaded(data.day_1_detail)
+      }
+      if (data.month_plan && onCalendarLoaded) {
+        console.log('[SSE] 触发Calendar回调')
+        onCalendarLoaded(data.month_plan)
+      }
     })
 
     // 监听完成事件
@@ -117,9 +161,23 @@ export function StrategySection({ auditId, onDataLoaded }: StrategySectionProps)
     }
   }, [auditId])
 
-  // 加载状态
+  // 加载状态 - 每个模块都显示骨架屏
   if (!strategy) {
-    return <AIThinkingAnimation phase={phase} progress={progress} error={error} />
+    return (
+      <div className="space-y-8">
+        {/* 品牌人设骨架屏 */}
+        <SkeletonCard title="品牌人设" />
+
+        {/* 内容配比骨架屏 */}
+        <SkeletonCard title="内容配比策略" />
+
+        {/* 目标受众骨架屏 */}
+        <SkeletonCard title="目标受众" />
+
+        {/* AI思考动画 (作为悬浮提示) */}
+        <AIThinkingAnimation phase={phase} progress={progress} error={error} />
+      </div>
+    )
   }
 
   // 渲染策略内容
@@ -128,7 +186,7 @@ export function StrategySection({ auditId, onDataLoaded }: StrategySectionProps)
       {/* 品牌人设 */}
       <div className="bg-white border border-sand-200 p-10 shadow-sm">
         <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">
-          Your Brand Persona
+          品牌人设
         </h2>
         <div className="bg-sand-50 border border-sand-200 p-6">
           <h3 className="font-serif text-2xl font-bold text-charcoal-900 mb-3">
@@ -139,7 +197,7 @@ export function StrategySection({ auditId, onDataLoaded }: StrategySectionProps)
           </p>
           <div className="bg-white border border-sand-200 p-4">
             <p className="font-sans text-xs text-charcoal-600 mb-1 font-semibold">
-              Optimized Bio:
+              优化后的简介:
             </p>
             <p className="font-sans text-sm text-charcoal-900">
               {strategy.strategy_section?.brand_persona?.one_liner_bio || '你的社区咖啡驿站 ☕'}
@@ -152,28 +210,9 @@ export function StrategySection({ auditId, onDataLoaded }: StrategySectionProps)
       {strategy.strategy_section?.content_mix_chart && (
         <div className="bg-white border border-sand-200 p-10 shadow-sm">
           <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">
-            Content Mix Strategy
+            内容配比策略
           </h2>
-          <div className="space-y-4">
-            {strategy.strategy_section.content_mix_chart.map((item: any, i: number) => (
-              <div key={i}>
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="font-sans text-base font-bold text-charcoal-900">
-                    {item.label}
-                  </h3>
-                  <span className="font-sans text-sm text-charcoal-600">
-                    {item.percentage}%
-                  </span>
-                </div>
-                <div className="w-full bg-sand-100 h-3">
-                  <div
-                    className="bg-sage h-3 transition-all duration-1000"
-                    style={{ width: `${item.percentage}%` }}
-                  ></div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <ContentMixPieChart data={strategy.strategy_section.content_mix_chart} />
         </div>
       )}
 
@@ -181,7 +220,7 @@ export function StrategySection({ auditId, onDataLoaded }: StrategySectionProps)
       {strategy.strategy_section?.target_audience && (
         <div className="bg-white border border-sand-200 p-10 shadow-sm">
           <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">
-            Target Audience
+            目标受众
           </h2>
           <div className="grid md:grid-cols-2 gap-6">
             {strategy.strategy_section.target_audience.map((audience: any, i: number) => (
@@ -193,13 +232,101 @@ export function StrategySection({ auditId, onDataLoaded }: StrategySectionProps)
                   {audience.description}
                 </h4>
                 <p className="font-sans text-sm text-charcoal-600">
-                  <span className="font-semibold">Pain Point:</span> {audience.pain_point}
+                  <span className="font-semibold">痛点:</span> {audience.pain_point}
                 </p>
               </div>
             ))}
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+/**
+ * 骨架屏卡片组件 - 双层转圈动画
+ */
+function SkeletonCard({ title }: { title: string }) {
+  return (
+    <div className="bg-white border border-sand-200 p-10 shadow-sm">
+      <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">
+        {title}
+      </h2>
+      <div className="flex items-center justify-center h-48">
+        {/* 双层转圈动画 */}
+        <div className="relative w-20 h-20">
+          {/* 外圈 - 顺时针慢速 */}
+          <div
+            className="absolute inset-0 border-4 border-sand-200 rounded-full border-t-sage"
+            style={{ animation: 'spin 2s linear infinite' }}
+          ></div>
+          {/* 内圈 - 逆时针快速 */}
+          <div
+            className="absolute inset-2 border-4 border-sand-200 rounded-full border-b-charcoal-900"
+            style={{ animation: 'spin 1s linear infinite reverse' }}
+          ></div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * 内容配比饼图组件
+ */
+function ContentMixPieChart({ data }: { data: Array<{ label: string; percentage: number }> }) {
+  // 转换数据格式
+  const chartData = data.map((item) => ({
+    name: item.label,
+    value: item.percentage
+  }))
+
+  return (
+    <div className="grid md:grid-cols-2 gap-8 items-center">
+      {/* 左侧饼图 */}
+      <div className="h-80">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={chartData}
+              cx="50%"
+              cy="50%"
+              labelLine={false}
+              label={({ name, value }) => `${name}: ${value}%`}
+              outerRadius={100}
+              fill="#8884d8"
+              dataKey="value"
+            >
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip formatter={(value) => `${value}%`} />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* 右侧图例 */}
+      <div className="space-y-3">
+        {data.map((item, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <div
+              className="w-4 h-4 rounded-sm flex-shrink-0"
+              style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}
+            ></div>
+            <div className="flex-1">
+              <div className="flex justify-between items-center">
+                <span className="font-sans text-sm font-bold text-charcoal-900">
+                  {item.label}
+                </span>
+                <span className="font-sans text-sm text-charcoal-600">
+                  {item.percentage}%
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

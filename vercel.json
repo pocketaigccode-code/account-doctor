@@ -1,0 +1,53 @@
+{
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+
+  "functions": {
+    "app/api/audit/[auditId]/diagnosis/route.ts": {
+      "maxDuration": 60,
+      "memory": 1024
+    },
+    "app/api/audit/[auditId]/strategy/route.ts": {
+      "maxDuration": 60,
+      "memory": 1024
+    }
+  },
+
+  "headers": [
+    {
+      "source": "/api/audit/:auditId/diagnosis",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-transform"
+        },
+        {
+          "key": "Connection",
+          "value": "keep-alive"
+        },
+        {
+          "key": "X-Accel-Buffering",
+          "value": "no"
+        }
+      ]
+    },
+    {
+      "source": "/api/audit/:auditId/strategy",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-transform"
+        },
+        {
+          "key": "Connection",
+          "value": "keep-alive"
+        },
+        {
+          "key": "X-Accel-Buffering",
+          "value": "no"
+        }
+      ]
+    }
+  ]
+}
