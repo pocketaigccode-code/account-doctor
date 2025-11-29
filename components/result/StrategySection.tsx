@@ -180,7 +180,7 @@ export function StrategySection({ auditId, t, onDataLoaded, onDay1Loaded, onCale
 
   // 加载状态 - 初始连接中
   if (!strategy && progress === 0) {
-    return <AIThinkingAnimation phase={phase} progress={progress} error={error} t={t} />
+    return <AIThinkingAnimation phase={phase} progress={progress} error={error} />
   }
 
   // 渲染策略内容 (渐进式显示)
