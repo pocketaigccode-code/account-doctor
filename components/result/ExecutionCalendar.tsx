@@ -201,15 +201,18 @@ export function ExecutionCalendar({ calendar, t }: ExecutionCalendarProps) {
  */
 function MonthPlanLoadingAnimation() {
   return (
-    <div className="relative w-24 h-24">
+    <div className="relative w-32 h-32">
       {/* 外圈 - 逆时针旋转 */}
-      <div className="absolute inset-0 border-4 border-transparent border-t-charcoal-900 rounded-full animate-spin"></div>
+      <div className="absolute inset-0 border-[6px] border-transparent border-t-charcoal-900 rounded-full animate-spin" style={{ animationDuration: '1.5s' }}></div>
 
-      {/* 中圈 - 顺时针旋转 */}
-      <div className="absolute inset-2 border-4 border-transparent border-t-coral rounded-full animate-spin-reverse"></div>
+      {/* 中圈 - 顺时针旋转(反向) */}
+      <div
+        className="absolute inset-3 border-[5px] border-transparent border-t-coral rounded-full animate-spin"
+        style={{ animationDuration: '2s', animationDirection: 'reverse' }}
+      ></div>
 
       {/* 内圈 - 逆时针旋转 */}
-      <div className="absolute inset-4 border-4 border-transparent border-t-sage rounded-full animate-spin"></div>
+      <div className="absolute inset-6 border-4 border-transparent border-t-sage rounded-full animate-spin" style={{ animationDuration: '1s' }}></div>
     </div>
   )
 }
