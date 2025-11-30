@@ -321,46 +321,56 @@ function ContentMixPieChart({ data }: { data: Array<{ label: string; percentage:
   }))
 
   return (
-    <div className="grid md:grid-cols-2 gap-8 items-center">
-      {/* 左侧饼图 */}
-      <div className="h-80">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={chartData}
-              cx="50%"
-              cy="50%"
-              labelLine={false}
-              label={({ name, value }) => `${name}: ${value}%`}
-              outerRadius={100}
-              fill="#8884d8"
-              dataKey="value"
-            >
-              {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip formatter={(value) => `${value}%`} />
-          </PieChart>
-        </ResponsiveContainer>
+    <div className="flex flex-col gap-8">
+      {/* 饼图 - 移除标签,避免截断 */}
+      <div className="flex justify-center">
+        <div className="w-full max-w-md h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={chartData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={false}
+                outerRadius={110}
+                fill="#8884d8"
+                dataKey="value"
+                strokeWidth={2}
+                stroke="#fff"
+              >
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(value) => `${value}%`}
+                contentStyle={{
+                  backgroundColor: '#fff',
+                  border: '1px solid #E5E4D7',
+                  borderRadius: '4px',
+                  padding: '8px 12px'
+                }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
-      {/* 右侧图例 */}
-      <div className="space-y-3">
+      {/* 图例列表 - 放在饼图下方 */}
+      <div className="grid md:grid-cols-2 gap-4">
         {data.map((item, i) => (
-          <div key={i} className="flex items-center gap-3">
+          <div key={i} className="flex items-center gap-3 bg-sand-50 border border-sand-200 p-4">
             <div
-              className="w-4 h-4 rounded-sm flex-shrink-0"
+              className="w-5 h-5 rounded-sm flex-shrink-0"
               style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}
             ></div>
-            <div className="flex-1">
-              <div className="flex justify-between items-center">
-                <span className="font-sans text-sm font-bold text-charcoal-900">
-                  {item.label}
-                </span>
-                <span className="font-sans text-sm text-charcoal-600">
-                  {item.percentage}%
-                </span>
+            <div className="flex-1 min-w-0">
+              <div className="font-sans text-sm font-bold text-charcoal-900 mb-1 truncate">
+                {item.label}
+              </div>
+              <div className="font-sans text-2xl font-bold text-charcoal-900">
+                {item.percentage}%
               </div>
             </div>
           </div>
