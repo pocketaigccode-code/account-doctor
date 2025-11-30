@@ -192,22 +192,20 @@ export default function AuditResultPage({ params }: PageProps) {
 
         {/* Day 1内容预览 - 独立模块 (progress>=60立即显示骨架屏) */}
         {diagnosisData && (strategyProgress >= 60 || day1Data) && (
-          <>
-            {console.log('[Day1渲染] day1Data存在?', !!day1Data, day1Data?.title)}
+          <div className="mb-8">
             {day1Data ? (
               <Day1Preview day1={day1Data} t={t} />
             ) : (
               <Day1Skeleton t={t} />
             )}
-          </>
+          </div>
         )}
 
         {/* 30天日历 - 独立模块 (有Day1就显示,月度计划异步加载) */}
         {diagnosisData && day1Data && (
-          <>
-            {console.log('[Calendar渲染] day1Data存在?', !!day1Data, 'calendarData:', !!calendarData)}
+          <div className="mb-8">
             <ExecutionCalendar calendar={{ day_1_detail: day1Data, month_plan: calendarData }} t={t} />
-          </>
+          </div>
         )}
       </main>
     </div>
