@@ -185,7 +185,7 @@ export function StrategySection({ auditId, t, onDataLoaded, onDay1Loaded, onCale
 
   // 渲染策略内容 (渐进式显示)
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 mb-8">
       {/* 品牌人设 - 数据或骨架屏 */}
       {strategy?.strategy_section?.brand_persona ? (
         <div className="bg-white border border-sand-200 p-10 shadow-sm">
