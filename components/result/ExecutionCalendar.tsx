@@ -23,10 +23,10 @@ interface ExecutionCalendarProps {
       idea: string
     }> | null
   }
-  t: (key: string) => string
+  
 }
 
-export function ExecutionCalendar({ calendar, t }: ExecutionCalendarProps) {
+export function ExecutionCalendar({ calendar }: ExecutionCalendarProps) {
   const params = useParams()
   const auditId = params?.auditId as string
   const [monthPlan, setMonthPlan] = useState(calendar?.month_plan || null)
@@ -81,20 +81,20 @@ export function ExecutionCalendar({ calendar, t }: ExecutionCalendarProps) {
       {/* 30天智能日历 */}
       <div className="bg-white border border-sand-200 p-10 shadow-sm">
         <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">
-          {t('result.calendar.title')}
+          Smart Content Calendar
         </h2>
 
         {/* Day 1-7 */}
         <div className="grid grid-cols-7 gap-4 mb-8">
           {/* Day 1 - 准备发布 */}
           <div className="border-2 border-sage p-4 bg-white">
-            <div className="font-sans text-xs font-bold text-charcoal-900 mb-2">{t('result.calendar.day')} 1 {t('result.calendar.dayUnit')}</div>
+            <div className="font-sans text-xs font-bold text-charcoal-900 mb-2">Day 1 </div>
             <div className="aspect-square bg-sand-100 mb-2 flex items-center justify-center">
               <svg className="w-8 h-8 text-charcoal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <h4 className="font-sans text-xs font-semibold text-charcoal-900 mb-1">{t('result.calendar.readyToPublish')}</h4>
+            <h4 className="font-sans text-xs font-semibold text-charcoal-900 mb-1">Ready to Publish</h4>
             <p className="font-sans text-xs text-charcoal-600 line-clamp-2">
               {calendar.day_1_detail.caption.substring(0, 40)}...
             </p>
@@ -102,17 +102,17 @@ export function ExecutionCalendar({ calendar, t }: ExecutionCalendarProps) {
 
           {/* Day 2-7 - 已规划 或 加载中 */}
           {!monthPlan && isLoadingCalendar ? (
-            // 加载动画占位
+            // Loading animation placeholder
             <div className="col-span-6 flex flex-col items-center justify-center py-8">
               <MonthPlanLoadingAnimation />
-              <p className="font-sans text-sm text-charcoal-600 mt-4">正在生成剩余29天内容计划...</p>
+              <p className="font-sans text-sm text-charcoal-600 mt-4">Generating remaining 29-day content plan...</p>
             </div>
           ) : (
             monthPlan?.slice(0, 6).map((day) => (
               <div key={day.day} className="border border-sand-200 p-4 bg-sand-50">
-                <div className="font-sans text-xs font-bold text-charcoal-900 mb-2">{t('result.calendar.day')} {day.day} {t('result.calendar.dayUnit')}</div>
+                <div className="font-sans text-xs font-bold text-charcoal-900 mb-2">Day {day.day} </div>
                 <div className="aspect-square bg-sand-200 mb-2"></div>
-                <h4 className="font-sans text-xs font-semibold text-sage mb-1">{t('result.calendar.planned')}</h4>
+                <h4 className="font-sans text-xs font-semibold text-sage mb-1">✓ Planned</h4>
                 <p className="font-sans text-xs text-charcoal-800 line-clamp-2">{day.theme}</p>
               </div>
             ))
@@ -124,9 +124,9 @@ export function ExecutionCalendar({ calendar, t }: ExecutionCalendarProps) {
         <div className="grid grid-cols-7 gap-4 mb-8">
           {monthPlan.slice(6, 13).map((day) => (
             <div key={day.day} className="border border-sand-200 p-3 bg-sand-50">
-              <div className="font-sans text-xs font-bold text-charcoal-900 mb-2">{t('result.calendar.day')} {day.day} {t('result.calendar.dayUnit')}</div>
+              <div className="font-sans text-xs font-bold text-charcoal-900 mb-2">Day {day.day} </div>
               <div className="aspect-square bg-sand-200 mb-1"></div>
-              <h4 className="font-sans text-xs font-semibold text-sage mb-1">{t('result.calendar.planned')}</h4>
+              <h4 className="font-sans text-xs font-semibold text-sage mb-1">✓ Planned</h4>
               <p className="font-sans text-xs text-charcoal-800 line-clamp-2">{day.theme}</p>
             </div>
           ))}
@@ -138,9 +138,9 @@ export function ExecutionCalendar({ calendar, t }: ExecutionCalendarProps) {
         <div className="grid grid-cols-7 gap-4 mb-8">
           {monthPlan.slice(13, 20).map((day) => (
             <div key={day.day} className="border border-sand-200 p-3 bg-sand-50">
-              <div className="font-sans text-xs font-bold text-charcoal-900 mb-2">{t('result.calendar.day')} {day.day} {t('result.calendar.dayUnit')}</div>
+              <div className="font-sans text-xs font-bold text-charcoal-900 mb-2">Day {day.day} </div>
               <div className="aspect-square bg-sand-200 mb-1"></div>
-              <h4 className="font-sans text-xs font-semibold text-sage mb-1">{t('result.calendar.planned')}</h4>
+              <h4 className="font-sans text-xs font-semibold text-sage mb-1">✓ Planned</h4>
               <p className="font-sans text-xs text-charcoal-800 line-clamp-2">{day.theme}</p>
             </div>
           ))}
@@ -152,9 +152,9 @@ export function ExecutionCalendar({ calendar, t }: ExecutionCalendarProps) {
         <div className="grid grid-cols-7 gap-4 mb-8">
           {monthPlan.slice(20, 27).map((day) => (
             <div key={day.day} className="border border-sand-200 p-3 bg-sand-50">
-              <div className="font-sans text-xs font-bold text-charcoal-900 mb-2">{t('result.calendar.day')} {day.day} {t('result.calendar.dayUnit')}</div>
+              <div className="font-sans text-xs font-bold text-charcoal-900 mb-2">Day {day.day} </div>
               <div className="aspect-square bg-sand-200 mb-1"></div>
-              <h4 className="font-sans text-xs font-semibold text-sage mb-1">{t('result.calendar.planned')}</h4>
+              <h4 className="font-sans text-xs font-semibold text-sage mb-1">✓ Planned</h4>
               <p className="font-sans text-xs text-charcoal-800 line-clamp-2">{day.theme}</p>
             </div>
           ))}
@@ -166,9 +166,9 @@ export function ExecutionCalendar({ calendar, t }: ExecutionCalendarProps) {
         <div className="grid grid-cols-7 gap-4 mb-8">
           {monthPlan.slice(27, 29).map((day) => (
             <div key={day.day} className="border border-sand-200 p-3 bg-sand-50">
-              <div className="font-sans text-xs font-bold text-charcoal-900 mb-2">{t('result.calendar.day')} {day.day} {t('result.calendar.dayUnit')}</div>
+              <div className="font-sans text-xs font-bold text-charcoal-900 mb-2">Day {day.day} </div>
               <div className="aspect-square bg-sand-200 mb-1"></div>
-              <h4 className="font-sans text-xs font-semibold text-sage mb-1">{t('result.calendar.planned')}</h4>
+              <h4 className="font-sans text-xs font-semibold text-sage mb-1">✓ Planned</h4>
               <p className="font-sans text-xs text-charcoal-800 line-clamp-2">{day.theme}</p>
             </div>
           ))}
@@ -182,13 +182,13 @@ export function ExecutionCalendar({ calendar, t }: ExecutionCalendarProps) {
         {/* CTA */}
         <div className="bg-sand-100 border-2 border-charcoal-900 p-8 text-center">
           <h3 className="font-serif text-2xl font-bold text-charcoal-900 mb-3">
-            {t('result.calendar.unlockTitle')}
+            Unlock Full 30-Day Plan
           </h3>
           <p className="font-sans text-sm text-charcoal-600 mb-6 max-w-md mx-auto">
-            {t('result.calendar.unlockDesc')}
+            Get the complete content calendar with daily publishing recommendations, optimal timing, and professional copy
           </p>
           <button className="bg-charcoal-900 text-white font-sans font-semibold py-3 px-8 hover:bg-charcoal-800 transition-colors">
-            {t('result.calendar.unlockButton')}
+            Sign Up Free to Unlock
           </button>
         </div>
       </div>

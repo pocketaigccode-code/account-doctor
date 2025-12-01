@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Merriweather } from "next/font/google";
 import "./globals.css";
-import { LanguageProvider } from "@/contexts/LanguageContext";
+
 
 const inter = Inter({
   variable: "--font-inter",
@@ -25,13 +25,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN">
+    <html lang="en">
       <body
         className={`${inter.variable} ${merriweather.variable} font-sans antialiased`}
       >
-        <LanguageProvider>
+        
           {children}
-        </LanguageProvider>
+        
       </body>
     </html>
   );

@@ -2,12 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useLanguage } from '@/contexts/LanguageContext'
-import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 
 export default function Home() {
   const router = useRouter()
-  const { t } = useLanguage()
   const [username, setUsername] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -17,7 +14,7 @@ export default function Home() {
     setError('')
 
     if (!username.trim()) {
-      setError(t('home.errorRequired'))
+      setError('Please enter Instagram username')
       return
     }
 
@@ -35,7 +32,7 @@ export default function Home() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.ui_message || errorData.message || t('home.errorFailed'))
+        throw new Error(errorData.ui_message || errorData.message || 'Diagnosis failed')
       }
 
       const data = await response.json()
@@ -55,7 +52,7 @@ export default function Home() {
       router.push(`/audit/${data.audit_id}`)
 
     } catch (err) {
-      setError((err as Error).message || t('common.error'))
+      setError((err as Error).message || 'An error occurred, please try again')
       setIsLoading(false)
     }
   }
@@ -65,8 +62,7 @@ export default function Home() {
       {/* Navigation */}
       <nav className="bg-white/80 backdrop-blur-sm border-b border-sand-200">
         <div className="max-w-5xl mx-auto px-8 py-5 flex justify-between items-center">
-          <h1 className="font-serif text-charcoal-900 text-xl font-bold">{t('common.appName')}</h1>
-          <LanguageSwitcher />
+          <h1 className="font-serif text-charcoal-900 text-xl font-bold">AccountDoctor</h1>
         </div>
       </nav>
 
@@ -74,11 +70,11 @@ export default function Home() {
       <section className="max-w-4xl mx-auto px-8 pt-20 pb-16">
         <div className="text-center mb-16">
           <h1 className="font-serif text-5xl font-bold text-charcoal-900 mb-6 leading-tight tracking-tight">
-            {t('home.title')}
+            Instagram Account In-Depth Analysis & Optimization
           </h1>
 
           <p className="font-sans text-lg text-charcoal-600 mb-12 max-w-2xl mx-auto leading-relaxed">
-            {t('home.subtitle')}
+            Get a professional AI account diagnosis report in 60 seconds and discover hidden issues.
           </p>
 
           {/* Input Form */}
@@ -89,7 +85,7 @@ export default function Home() {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder={t('home.inputPlaceholder')}
+                  placeholder="Enter Instagram username"
                   disabled={isLoading}
                   className="w-full px-5 py-4 text-base border-2 border-charcoal-900 bg-white text-charcoal-900 placeholder:text-charcoal-600 focus:outline-none focus:ring-2 focus:ring-charcoal-900 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed font-sans"
                 />
@@ -107,25 +103,25 @@ export default function Home() {
                 className="w-full bg-charcoal-900 text-white font-sans font-semibold text-base py-4 px-8 hover:bg-charcoal-800 transition-colors disabled:bg-charcoal-600 disabled:cursor-not-allowed border-none"
                 style={{ backgroundColor: isLoading ? '#666666' : '#191919', color: '#ffffff' }}
               >
-                {isLoading ? t('home.analyzingButton') : t('home.startButton')}
+                {isLoading ? 'Analyzing...' : 'Start Diagnosis'}
               </button>
 
               {isLoading && (
                 <div className="text-center mt-6">
                   <div className="inline-block bg-white border-2 border-sand-300 px-8 py-6">
-                    <p className="text-xs font-sans font-bold text-charcoal-900 mb-4 uppercase tracking-widest">{t('home.analyzing.title')}</p>
+                    <p className="text-xs font-sans font-bold text-charcoal-900 mb-4 uppercase tracking-widest">ANALYZING</p>
                     <div className="space-y-2 text-left">
                       <div className="flex items-center gap-3 text-sm font-sans">
                         <span className="text-sage">✓</span>
-                        <span className="text-charcoal-900">{t('home.analyzing.step1')}</span>
+                        <span className="text-charcoal-900">Fetching data</span>
                       </div>
                       <div className="flex items-center gap-3 text-sm font-sans">
                         <div className="w-4 h-4 border-2 border-charcoal-900 border-t-transparent rounded-full animate-spin"></div>
-                        <span className="text-charcoal-900 font-medium">{t('home.analyzing.step2')}</span>
+                        <span className="text-charcoal-900 font-medium">AI analyzing...</span>
                       </div>
                       <div className="flex items-center gap-3 text-sm font-sans">
                         <span className="text-sand-400">○</span>
-                        <span className="text-charcoal-400">{t('home.analyzing.step3')}</span>
+                        <span className="text-charcoal-400">Generating report</span>
                       </div>
                     </div>
                   </div>
@@ -140,23 +136,23 @@ export default function Home() {
       <section className="max-w-4xl mx-auto px-8 pb-20">
         <div className="grid md:grid-cols-3 gap-8">
           <div className="bg-white p-8 border border-sand-200 shadow-sm">
-            <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-3">{t('home.features.feature1Title')}</h3>
+            <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-3">Multi-Dimensional Scoring</h3>
             <p className="font-sans text-sm text-charcoal-600 leading-relaxed">
-              {t('home.features.feature1Desc')}
+              35+ metrics for comprehensive account health assessment
             </p>
           </div>
 
           <div className="bg-white p-8 border border-sand-200 shadow-sm">
-            <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-3">{t('home.features.feature2Title')}</h3>
+            <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-3">AI Content Generation</h3>
             <p className="font-sans text-sm text-charcoal-600 leading-relaxed">
-              {t('home.features.feature2Desc')}
+              Smart captions, hashtags and content calendar planning made easy
             </p>
           </div>
 
           <div className="bg-white p-8 border border-sand-200 shadow-sm">
-            <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-3">{t('home.features.feature3Title')}</h3>
+            <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-3">Actionable Solutions</h3>
             <p className="font-sans text-sm text-charcoal-600 leading-relaxed">
-              {t('home.features.feature3Desc')}
+              Specific improvement steps with prioritization for immediate optimization
             </p>
           </div>
         </div>
@@ -166,7 +162,7 @@ export default function Home() {
       <footer className="border-t border-sand-200 bg-white py-8">
         <div className="max-w-4xl mx-auto px-8 text-center">
           <p className="font-sans text-xs text-charcoal-600">
-            {t('home.footer')}
+            © 2025 AccountDoctor. AI-powered social media account diagnosis tool
           </p>
         </div>
       </footer>

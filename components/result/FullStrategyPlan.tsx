@@ -6,14 +6,14 @@
 'use client'
 
 import { useState } from 'react'
-import { useLanguage } from '@/contexts/LanguageContext'
+
 
 interface FullStrategyPlanProps {
   plan: any  // 完整的strategy_plan数据
 }
 
 export function FullStrategyPlan({ plan }: FullStrategyPlanProps) {
-  const { t } = useLanguage()
+  
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['background']))
 
   const toggleSection = (sectionId: string) => {
@@ -32,7 +32,7 @@ export function FullStrategyPlan({ plan }: FullStrategyPlanProps) {
     <div className="bg-white border border-sand-200 p-10 mb-8 shadow-sm">
       <div className="flex items-center justify-between mb-8">
         <h2 className="font-serif text-3xl font-bold text-charcoal-900">
-          {t('result.fullStrategy.title')}
+          Complete Strategy Plan
         </h2>
         <button
           onClick={() => {
@@ -44,20 +44,20 @@ export function FullStrategyPlan({ plan }: FullStrategyPlanProps) {
           }}
           className="font-sans text-sm text-sage hover:text-charcoal-900 transition-colors"
         >
-          {expandedSections.size > 0 ? t('result.fullStrategy.collapseAll') : t('result.fullStrategy.expandAll')}
+          {expandedSections.size > 0 ? 'Collapse All' : 'Expand All'}
         </button>
       </div>
 
       {/* 一、账号背景与运营目标 */}
       <Section
         id="background"
-        title={t('result.fullStrategy.sectionBackground')}
+        title="I. Account Background & Objectives"
         isExpanded={expandedSections.has('background')}
         onToggle={() => toggleSection('background')}
       >
         <div className="space-y-4">
           <div>
-            <h4 className="font-sans text-sm font-bold text-charcoal-900 mb-2">{t('result.fullStrategy.labelBackground')}</h4>
+            <h4 className="font-sans text-sm font-bold text-charcoal-900 mb-2">Account Background</h4>
             <div className="bg-sand-50 border border-sand-200 p-4">
               <p className="font-sans text-sm text-charcoal-800 leading-relaxed whitespace-pre-wrap">
                 {plan.background_goal?.background}
@@ -66,7 +66,7 @@ export function FullStrategyPlan({ plan }: FullStrategyPlanProps) {
           </div>
 
           <div>
-            <h4 className="font-sans text-sm font-bold text-charcoal-900 mb-2">{t('result.fullStrategy.labelGoals')}</h4>
+            <h4 className="font-sans text-sm font-bold text-charcoal-900 mb-2">Objectives</h4>
             <div className="space-y-2">
               {plan.background_goal?.goals?.map((goal: string, i: number) => (
                 <div key={i} className="flex gap-3 items-start">
@@ -86,25 +86,25 @@ export function FullStrategyPlan({ plan }: FullStrategyPlanProps) {
       {/* 二、对标账号分析 */}
       <Section
         id="competitor"
-        title={t('result.fullStrategy.sectionCompetitor')}
+        title="II. Competitor Analysis"
         isExpanded={expandedSections.has('competitor')}
         onToggle={() => toggleSection('competitor')}
       >
         <div className="space-y-6">
           <AnalysisBlock
-            title={t('result.fullStrategy.labelChainCompetitors')}
+            title="Chain Competitors"
             content={plan.competitor_analysis?.chain_competitors}
           />
           <AnalysisBlock
-            title={t('result.fullStrategy.labelInfluencers')}
+            title="Individual Influencers"
             content={plan.competitor_analysis?.individual_influencers}
           />
           <AnalysisBlock
-            title={t('result.fullStrategy.labelCrossIndustry')}
+            title="Cross-Industry Inspiration"
             content={plan.competitor_analysis?.cross_industry}
           />
           <AnalysisBlock
-            title={t('result.fullStrategy.labelStrengths')}
+            title="Brand Strengths to Amplify"
             content={plan.competitor_analysis?.strengths}
             highlight
           />
@@ -114,24 +114,24 @@ export function FullStrategyPlan({ plan }: FullStrategyPlanProps) {
       {/* 三、目标用户画像 */}
       <Section
         id="users"
-        title={t('result.fullStrategy.sectionUsers')}
+        title="III. Target User Profiles"
         isExpanded={expandedSections.has('users')}
         onToggle={() => toggleSection('users')}
       >
         <div className="grid md:grid-cols-2 gap-6">
           <div className="bg-sand-50 border border-sand-200 p-6">
             <span className="inline-block bg-charcoal-900 text-white px-3 py-1.5 font-sans text-xs font-bold mb-3">
-              {t('result.fullStrategy.labelMainUser')}
+              Main User
             </span>
             <div className="space-y-3">
               <div>
-                <h5 className="font-sans text-xs font-bold text-charcoal-900 mb-1">{t('result.fullStrategy.labelDemographics')}</h5>
+                <h5 className="font-sans text-xs font-bold text-charcoal-900 mb-1">Demographics</h5>
                 <p className="font-sans text-sm text-charcoal-800 leading-relaxed">
                   {plan.target_users?.main_user?.demographics}
                 </p>
               </div>
               <div>
-                <h5 className="font-sans text-xs font-bold text-charcoal-900 mb-1">{t('result.fullStrategy.labelPainPoints')}</h5>
+                <h5 className="font-sans text-xs font-bold text-charcoal-900 mb-1">Key Pain Points</h5>
                 <p className="font-sans text-sm text-charcoal-800 leading-relaxed">
                   {plan.target_users?.main_user?.pain_points}
                 </p>
@@ -141,7 +141,7 @@ export function FullStrategyPlan({ plan }: FullStrategyPlanProps) {
 
           <div className="bg-sand-50 border border-sand-200 p-6">
             <span className="inline-block bg-sand-200 text-charcoal-900 px-3 py-1.5 font-sans text-xs font-bold mb-3">
-              {t('result.fullStrategy.labelSecondaryUser')}
+              Secondary User
             </span>
             <p className="font-sans text-sm text-charcoal-800 leading-relaxed">
               {plan.target_users?.secondary_user}
@@ -150,7 +150,7 @@ export function FullStrategyPlan({ plan }: FullStrategyPlanProps) {
         </div>
 
         <div className="mt-6 bg-sage/5 border-l-4 border-sage p-5">
-          <h5 className="font-sans text-sm font-bold text-charcoal-900 mb-2">{t('result.fullStrategy.labelContentPreference')}</h5>
+          <h5 className="font-sans text-sm font-bold text-charcoal-900 mb-2">Content Preferences</h5>
           <p className="font-sans text-sm text-charcoal-800 leading-relaxed whitespace-pre-wrap">
             {plan.target_users?.content_preference}
           </p>
@@ -160,7 +160,7 @@ export function FullStrategyPlan({ plan }: FullStrategyPlanProps) {
       {/* 四、账号定位与人设 */}
       <Section
         id="persona"
-        title={t('result.fullStrategy.sectionPersona')}
+        title="IV. Account Positioning & Persona"
         isExpanded={expandedSections.has('persona')}
         onToggle={() => toggleSection('persona')}
       >
@@ -216,7 +216,7 @@ export function FullStrategyPlan({ plan }: FullStrategyPlanProps) {
       {/* 五、内容栏目规划 */}
       <Section
         id="pillars"
-        title={t('result.fullStrategy.sectionPillars')}
+        title="V. Content Pillars & Topic Planning"
         isExpanded={expandedSections.has('pillars')}
         onToggle={() => toggleSection('pillars')}
       >
@@ -268,7 +268,7 @@ export function FullStrategyPlan({ plan }: FullStrategyPlanProps) {
       {/* 六、发布排期 */}
       <Section
         id="schedule"
-        title={t('result.fullStrategy.sectionSchedule')}
+        title="VI. Content Publishing & Operations Schedule"
         isExpanded={expandedSections.has('schedule')}
         onToggle={() => toggleSection('schedule')}
       >
@@ -342,7 +342,7 @@ export function FullStrategyPlan({ plan }: FullStrategyPlanProps) {
       {/* 七、KPI框架 */}
       <Section
         id="kpi"
-        title={t('result.fullStrategy.sectionKpi')}
+        title="VII. Data Operations & KPI Framework"
         isExpanded={expandedSections.has('kpi')}
         onToggle={() => toggleSection('kpi')}
       >

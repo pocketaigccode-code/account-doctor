@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
@@ -38,7 +38,7 @@ function ResultPageContent() {
 
   useEffect(() => {
     if (!reportId) {
-      setError('缺少报告ID')
+      setError('Missing report ID')
       setLoading(false)
       return
     }
@@ -53,7 +53,7 @@ function ResultPageContent() {
           animateScore(data.scoreBreakdown.total)
         }
       })
-      .catch(() => setError('获取报告失败'))
+      .catch(() => setError('Failed to fetch report'))
       .finally(() => setLoading(false))
   }, [reportId])
 
@@ -76,7 +76,7 @@ function ResultPageContent() {
       <div className="min-h-screen bg-sand-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-3 border-sand-200 border-t-charcoal-900 rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="font-sans text-sm text-charcoal-600">加载中...</p>
+          <p className="font-sans text-sm text-charcoal-600">Loading...</p>
         </div>
       </div>
     )
@@ -91,13 +91,13 @@ function ResultPageContent() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
-          <h2 className="font-serif text-2xl font-bold text-charcoal-900 mb-2">无法加载报告</h2>
+          <h2 className="font-serif text-2xl font-bold text-charcoal-900 mb-2">Failed to load report</h2>
           <p className="font-sans text-sm text-charcoal-600 mb-6">{error}</p>
           <button
             onClick={() => (window.location.href = '/')}
             className="bg-charcoal-900 text-white font-sans font-semibold py-3 px-6 hover:bg-charcoal-800 transition-colors"
           >
-            返回首页
+            Back to Home
           </button>
         </div>
       </div>
@@ -122,7 +122,7 @@ function ResultPageContent() {
             onClick={() => (window.location.href = '/')}
             className="text-charcoal-600 hover:text-charcoal-900 text-sm font-sans font-medium transition-colors"
           >
-            返回首页
+            Back to Home
           </button>
         </div>
       </nav>
@@ -131,7 +131,7 @@ function ResultPageContent() {
       <main className="max-w-5xl mx-auto px-8 py-12">
         {/* Section 1: The Diagnosis */}
         <div className="bg-white border border-sand-200 p-10 mb-8 shadow-sm">
-          <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-8">诊断结果</h2>
+          <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-8">Diagnosis Results</h2>
 
           <div className="flex items-start gap-16">
             {/* Total Score Circle */}
@@ -166,7 +166,7 @@ function ResultPageContent() {
 
             {/* Critical Issues */}
             <div className="flex-1">
-              <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-4">关键问题</h3>
+              <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-4">Critical Issues</h3>
               <div className="space-y-3">
                 {report.improvements.issues.slice(0, 3).map((issue, index) => (
                   <div key={index} className="flex gap-3 items-start bg-sand-50 border border-sand-200 p-3">
@@ -180,7 +180,7 @@ function ResultPageContent() {
 
               {/* Urgent Action */}
               <div className="mt-6 bg-terracotta-light border-l-4 border-terracotta p-5">
-                <h4 className="font-sans text-sm font-bold text-charcoal-900 mb-2">最紧急</h4>
+                <h4 className="font-sans text-sm font-bold text-charcoal-900 mb-2">Most Urgent</h4>
                 <p className="font-sans text-sm text-charcoal-800 leading-relaxed">{report.improvements.urgent_action}</p>
               </div>
             </div>
@@ -189,12 +189,12 @@ function ResultPageContent() {
 
         {/* Section 2: Growth Strategy (Content Mix) */}
         <div className="bg-white border border-sand-200 p-10 mb-8 shadow-sm">
-          <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">定制增长策略</h2>
+          <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">Custom Growth Strategy</h2>
 
           <div className="space-y-6">
             <div>
               <div className="flex justify-between items-center mb-3">
-                <h3 className="font-sans text-base font-bold text-charcoal-900">产品展示</h3>
+                <h3 className="font-sans text-base font-bold text-charcoal-900">Product Showcase</h3>
                 <span className="font-sans text-sm text-charcoal-600">40%</span>
               </div>
               <div className="w-full bg-sand-100 h-3">
@@ -204,7 +204,7 @@ function ResultPageContent() {
 
             <div>
               <div className="flex justify-between items-center mb-3">
-                <h3 className="font-sans text-base font-bold text-charcoal-900">生活方式</h3>
+                <h3 className="font-sans text-base font-bold text-charcoal-900">Lifestyle</h3>
                 <span className="font-sans text-sm text-charcoal-600">30%</span>
               </div>
               <div className="w-full bg-sand-100 h-3">
@@ -214,7 +214,7 @@ function ResultPageContent() {
 
             <div>
               <div className="flex justify-between items-center mb-3">
-                <h3 className="font-sans text-base font-bold text-charcoal-900">用户生成内容</h3>
+                <h3 className="font-sans text-base font-bold text-charcoal-900">User-Generated Content</h3>
                 <span className="font-sans text-sm text-charcoal-600">20%</span>
               </div>
               <div className="w-full bg-sand-100 h-3">
@@ -224,7 +224,7 @@ function ResultPageContent() {
 
             <div>
               <div className="flex justify-between items-center mb-3">
-                <h3 className="font-sans text-base font-bold text-charcoal-900">教育内容</h3>
+                <h3 className="font-sans text-base font-bold text-charcoal-900">Educational Content</h3>
                 <span className="font-sans text-sm text-charcoal-600">10%</span>
               </div>
               <div className="w-full bg-sand-100 h-3">
@@ -234,16 +234,16 @@ function ResultPageContent() {
           </div>
 
           <div className="mt-8 bg-sand-50 border border-sand-200 p-6">
-            <h4 className="font-sans text-sm font-bold text-charcoal-900 mb-3">策略分析</h4>
+            <h4 className="font-sans text-sm font-bold text-charcoal-900 mb-3">Strategy Analysis</h4>
             <p className="font-sans text-sm text-charcoal-800 leading-relaxed">
-              建议增加生活方式内容至30%,以提升受众情感连接。保持产品展示为核心(40%),同时融入20%的用户生成内容以增强社会证明。定期发布教育性内容(10%)建立品牌专业度。
+              Recommend increasing lifestyle content to 30% to enhance audience emotional connection. Keep product showcase as core (40%), while incorporating 20% user-generated content for social proof. Regularly publish educational content (10%) to establish brand expertise.
             </p>
           </div>
         </div>
 
         {/* Section 3: Content Preview */}
         <div className="bg-white border border-sand-200 p-10 mb-8 shadow-sm">
-          <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">内容预览与分析</h2>
+          <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">Content Preview & Analysis</h2>
 
           <div className="grid md:grid-cols-2 gap-10">
             {/* Left: Image Preview */}
@@ -259,7 +259,7 @@ function ResultPageContent() {
                 </div>
               </div>
               <div className="mt-4 bg-sand-50 border border-sand-200 p-4">
-                <h4 className="font-sans text-xs font-bold text-charcoal-900 mb-2">图片建议</h4>
+                <h4 className="font-sans text-xs font-bold text-charcoal-900 mb-2">Image Suggestion</h4>
                 <p className="font-sans text-sm text-charcoal-800 leading-relaxed">{report.day1Content.image_suggestion}</p>
               </div>
             </div>
@@ -267,7 +267,7 @@ function ResultPageContent() {
             {/* Right: Caption & Analysis */}
             <div className="space-y-6">
               <div>
-                <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-3">生成文案</h3>
+                <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-3">Generated Caption</h3>
                 <div className="bg-sand-50 border border-sand-200 p-5">
                   <p className="font-sans text-sm text-charcoal-900 leading-relaxed whitespace-pre-wrap">
                     {report.day1Content.caption}
@@ -276,7 +276,7 @@ function ResultPageContent() {
               </div>
 
               <div>
-                <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-3">推荐标签</h3>
+                <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-3">Recommended Hashtags</h3>
                 <div className="flex flex-wrap gap-2">
                   {report.day1Content.hashtags.map((tag, index) => (
                     <span
@@ -290,9 +290,9 @@ function ResultPageContent() {
               </div>
 
               <div className="bg-sage/10 border-l-4 border-sage p-5">
-                <h4 className="font-sans text-sm font-bold text-charcoal-900 mb-2">AI 分析</h4>
+                <h4 className="font-sans text-sm font-bold text-charcoal-900 mb-2">AI Analysis</h4>
                 <p className="font-sans text-sm text-charcoal-800 leading-relaxed">
-                  这篇内容融合了情感共鸣和产品展示,通过生活化场景降低商业感。发布时间建议在 {report.day1Content.best_time},此时段受众活跃度最高,预计互动率提升 25-40%。
+                  This content combines emotional resonance with product showcasing, using lifestyle scenarios to reduce commercial feel. Recommended posting time is {report.day1Content.best_time}, when audience activity is highest, with an estimated engagement boost of 25-40%.
                 </p>
               </div>
 
@@ -301,7 +301,7 @@ function ResultPageContent() {
                   <svg className="w-4 h-4 text-sage" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                   </svg>
-                  <h4 className="font-sans text-xs font-bold text-charcoal-900">最佳发布时间</h4>
+                  <h4 className="font-sans text-xs font-bold text-charcoal-900">Best Posting Time</h4>
                 </div>
                 <p className="font-sans text-base font-bold text-charcoal-900">{report.day1Content.best_time}</p>
               </div>
@@ -311,28 +311,28 @@ function ResultPageContent() {
 
         {/* Section 4: Smart Calendar */}
         <div className="bg-white border border-sand-200 p-10 mb-8 shadow-sm">
-          <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">智能内容日历</h2>
+          <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">Smart Content Calendar</h2>
 
           {/* 7-Day Calendar Grid */}
           <div className="grid grid-cols-7 gap-4 mb-8">
             {/* Day 1 - Ready to Post */}
             <div className="border-2 border-sage p-4 bg-white">
-              <div className="font-sans text-xs font-bold text-charcoal-900 mb-2">第 1 天</div>
+              <div className="font-sans text-xs font-bold text-charcoal-900 mb-2">Day 1</div>
               <div className="aspect-square bg-sand-100 mb-2 flex items-center justify-center">
                 <svg className="w-8 h-8 text-charcoal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
-              <h4 className="font-sans text-xs font-semibold text-charcoal-900 mb-1">准备发布</h4>
+              <h4 className="font-sans text-xs font-semibold text-charcoal-900 mb-1">Ready to Post</h4>
               <p className="font-sans text-xs text-charcoal-600 line-clamp-2">{report.day1Content.caption.substring(0, 40)}...</p>
             </div>
 
             {/* Day 2-7 - Planned */}
             {[2, 3, 4, 5, 6, 7].map((day) => (
               <div key={day} className="border border-sand-200 p-4 bg-sand-50 opacity-60">
-                <div className="font-sans text-xs font-bold text-charcoal-600 mb-2">第 {day} 天</div>
+                <div className="font-sans text-xs font-bold text-charcoal-600 mb-2">Day {day}</div>
                 <div className="aspect-square bg-sand-200 mb-2 blur-sm"></div>
-                <h4 className="font-sans text-xs font-semibold text-charcoal-600 mb-1">已规划</h4>
+                <h4 className="font-sans text-xs font-semibold text-charcoal-600 mb-1">Planned</h4>
                 <div className="space-y-1">
                   <div className="h-2 bg-sand-200 blur-sm"></div>
                   <div className="h-2 bg-sand-200 blur-sm w-3/4"></div>
@@ -345,7 +345,7 @@ function ResultPageContent() {
           <div className="grid grid-cols-7 gap-4 mb-8">
             {Array.from({ length: 7 }, (_, i) => i + 8).map((day) => (
               <div key={day} className="border border-sand-200 p-3 bg-sand-50 opacity-40">
-                <div className="font-sans text-xs text-charcoal-600 mb-2">第 {day} 天</div>
+                <div className="font-sans text-xs text-charcoal-600 mb-2">Day {day}</div>
                 <div className="aspect-square bg-sand-200 blur-md"></div>
               </div>
             ))}
@@ -353,12 +353,12 @@ function ResultPageContent() {
 
           {/* CTA Overlay */}
           <div className="bg-sand-100 border-2 border-charcoal-900 p-8 text-center">
-            <h3 className="font-serif text-2xl font-bold text-charcoal-900 mb-3">解锁完整 30 天计划</h3>
+            <h3 className="font-serif text-2xl font-bold text-charcoal-900 mb-3">Unlock Full 30-Day Plan</h3>
             <p className="font-sans text-sm text-charcoal-600 mb-6 max-w-md mx-auto">
-              获取完整的内容日历,包括每日发布建议、最佳时间和专业文案
+              Get the complete content calendar with daily posting suggestions, optimal times, and professional captions
             </p>
             <button className="bg-charcoal-900 text-white font-sans font-semibold py-3 px-8 hover:bg-charcoal-800 transition-colors">
-              免费注册解锁
+              Sign Up Free to Unlock
             </button>
           </div>
         </div>
@@ -373,7 +373,7 @@ export default function ResultPage() {
       <div className="min-h-screen bg-sand-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-3 border-sand-200 border-t-charcoal-900 rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="font-sans text-sm text-charcoal-600">加载中...</p>
+          <p className="font-sans text-sm text-charcoal-600">Loading...</p>
         </div>
       </div>
     }>

@@ -6,13 +6,13 @@ import { scoreAccount, generateDay1Content, generate30DayCalendar } from '@/lib/
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { scanId, industry = '餐饮' } = body
+    const { scanId, industry = 'Food & Beverage' } = body
 
     if (!scanId) {
-      return NextResponse.json({ error: '请提供扫描ID' }, { status: 400 })
+      return NextResponse.json({ error: 'Please provide scan ID' }, { status: 400 })
     }
 
-    // 获取扫描数据 (使用Supabase Client)
+    // Fetch scan data (using Supabase Client)
     const { data: scan, error: scanError } = await supabaseAdmin
       .from('Scan')
       .select('*')
@@ -20,20 +20,20 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (scanError || !scan) {
-      return NextResponse.json({ error: '扫描记录不存在' }, { status: 404 })
+      return NextResponse.json({ error: 'Scan record not found' }, { status: 404 })
     }
 
     if (scan.status !== 'COMPLETED') {
-      return NextResponse.json({ error: '扫描尚未完成' }, { status: 400 })
+      return NextResponse.json({ error: 'Scan not yet completed' }, { status: 400 })
     }
 
     const scanData = scan.scanData as any
 
     if (!scanData?.profile) {
-      return NextResponse.json({ error: '扫描数据无效' }, { status: 400 })
+      return NextResponse.json({ error: 'Invalid scan data' }, { status: 400 })
     }
 
-    // 1. 使用AI进行评分
+    // 1. Score using AI
     const scoreResult = await scoreAccount({
       username: scanData.profile.username,
       bio: scanData.profile.biography || '',
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       industry,
     })
 
-    // 2. 生成Day 1内容
+    // 2. Generate Day 1 content
     const day1Content = await generateDay1Content({
       username: scanData.profile.username,
       bio: scanData.profile.biography || '',
@@ -52,10 +52,10 @@ export async function POST(request: NextRequest) {
       mainIssue: scoreResult.urgent_action,
     })
 
-    // 3. 生成30天内容日历
+    // 3. Generate 30-day content calendar
     const calendar = await generate30DayCalendar(industry)
 
-    // 4. 创建诊断报告 (使用Supabase Client)
+    // 4. Create diagnosis report (using Supabase Client)
     const { data: report, error: reportError } = await supabaseAdmin
       .from('Report')
       .insert({
@@ -88,11 +88,11 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (reportError || !report) {
-      console.error('创建报告失败:', reportError)
-      return NextResponse.json({ error: '创建报告失败' }, { status: 500 })
+      console.error('Failed to create report:', reportError)
+      return NextResponse.json({ error: 'Failed to create report' }, { status: 500 })
     }
 
-    // 5. 更新扫描记录的评分 (使用Supabase Client)
+    // 5. Update scan record score (using Supabase Client)
     await supabaseAdmin
       .from('Scan')
       .update({ score: scoreResult.total_score })
@@ -102,24 +102,24 @@ export async function POST(request: NextRequest) {
       reportId: report.id,
       score: scoreResult.total_score,
       grade: scoreResult.grade,
-      message: '分析完成',
+      message: 'Analysis completed',
       debug: {
-        aiUsed: scoreResult.total_score > 50 ? 'DeerAPI' : '智能降级',
+        aiUsed: scoreResult.total_score > 50 ? 'DeerAPI' : 'Intelligent fallback',
         scoreBreakdown: scoreResult,
         day1Preview: day1Content.caption.substring(0, 50) + '...',
       },
     })
   } catch (error) {
-    console.error('分析失败:', error)
+    console.error('Analysis failed:', error)
     return NextResponse.json(
-      { error: '分析失败: ' + (error as Error).message },
+      { error: 'Analysis failed: ' + (error as Error).message },
       { status: 500 }
     )
   }
 }
 
 /**
- * 获取报告详情
+ * Get report details
  */
 export async function GET(request: NextRequest) {
   try {
@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
     let scan
 
     if (reportId) {
-      // 使用Supabase Client查询
+      // Query using Supabase Client
       const { data, error } = await supabaseAdmin
         .from('Report')
         .select('*, scan:Scan(*)')
@@ -139,7 +139,7 @@ export async function GET(request: NextRequest) {
         .single()
 
       if (error || !data) {
-        return NextResponse.json({ error: '报告不存在' }, { status: 404 })
+        return NextResponse.json({ error: 'Report not found' }, { status: 404 })
       }
       report = data
       scan = data.scan
@@ -151,12 +151,12 @@ export async function GET(request: NextRequest) {
         .single()
 
       if (error || !data) {
-        return NextResponse.json({ error: '报告不存在' }, { status: 404 })
+        return NextResponse.json({ error: 'Report not found' }, { status: 404 })
       }
       report = data
       scan = data.scan
     } else {
-      return NextResponse.json({ error: '请提供报告ID或扫描ID' }, { status: 400 })
+      return NextResponse.json({ error: 'Please provide report ID or scan ID' }, { status: 400 })
     }
 
     return NextResponse.json({
@@ -171,7 +171,7 @@ export async function GET(request: NextRequest) {
       expiresAt: report.expiresAt,
     })
   } catch (error) {
-    console.error('获取报告失败:', error)
-    return NextResponse.json({ error: '获取报告失败' }, { status: 500 })
+    console.error('Failed to fetch report:', error)
+    return NextResponse.json({ error: 'Failed to fetch report' }, { status: 500 })
   }
 }
