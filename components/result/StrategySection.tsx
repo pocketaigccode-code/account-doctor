@@ -57,197 +57,176 @@ interface StrategySectionProps {
 }
 
 export function StrategySection({ auditId, onDataLoaded, onDay1Loaded, onCalendarLoaded, onProgressUpdate }: StrategySectionProps) {
-  const [strategy, setStrategy] = useState<StrategyData | null>(null)
-  const [progress, setProgress] = useState(0)
-  const [phase, setPhase] = useState('loading')
+  // 每个模块独立状态
+  const [persona, setPersona] = useState<any>(null)
+  const [contentMix, setContentMix] = useState<any>(null)
+  const [audience, setAudience] = useState<any>(null)
+
+  // 加载状态
+  const [loadingPersona, setLoadingPersona] = useState(false)
+  const [loadingContentMix, setLoadingContentMix] = useState(false)
+  const [loadingAudience, setLoadingAudience] = useState(false)
+
+  // 错误状态
   const [error, setError] = useState<string | null>(null)
 
+  // 1. 加载 Brand Persona（优先级最高，立即加载）
   useEffect(() => {
-    console.log(`[SSE Client] Establishing connection for audit: ${auditId}`)
+    if (persona || loadingPersona) return
 
-    const eventSource = new EventSource(`/api/audit/${auditId}/strategy`)
+    console.log('[Strategy] 📤 Loading Brand Persona...')
+    setLoadingPersona(true)
 
-    // 监听状态更新
-    eventSource.addEventListener('status', (e) => {
-      const data = JSON.parse(e.data)
-      setPhase(data.phase)
-      setProgress(data.progress)
-      console.log(`[SSE] Progress: ${data.progress}% - ${data.phase}`)
-
-      // 触发progress回调
-      if (onProgressUpdate) {
-        onProgressUpdate(data.progress)
-      }
-    })
-
-    // 监听增量更新 (打字机效果)
-    eventSource.addEventListener('partial_update', (e) => {
-      const data = JSON.parse(e.data)
-      console.log(`[SSE] Partial update - Progress: ${data.progress}%`, data)
-
-      setStrategy(prev => {
-        const current = prev || { strategy_section: {}, execution_calendar: {} }
-        return {
-          ...current,
-          strategy_section: {
-            ...current.strategy_section,
-            ...(data.brand_persona && { brand_persona: data.brand_persona }),
-            ...(data.target_audience && { target_audience: data.target_audience }),
-            ...(data.content_mix_chart && { content_mix_chart: data.content_mix_chart })
-          },
-          execution_calendar: {
-            ...current.execution_calendar,
-            ...(data.day_1_detail && { day_1_detail: data.day_1_detail }),
-            ...(data.month_plan && { month_plan: data.month_plan })
-          }
+    fetch(`/api/audit/${auditId}/strategy/persona`, { method: 'POST' })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          console.log('[Strategy] ✅ Brand Persona loaded')
+          setPersona(data.brand_persona)
+          if (onProgressUpdate) onProgressUpdate(20)
+        } else {
+          throw new Error(data.message || 'Failed to load persona')
         }
       })
+      .catch(err => {
+        console.error('[Strategy] ❌ Brand Persona failed:', err)
+        setError(err.message)
+      })
+      .finally(() => setLoadingPersona(false))
+  }, [auditId, persona, loadingPersona])
 
-      setProgress(data.progress)
+  // 2. Persona完成后，并发加载 Content Mix 和 Audience
+  useEffect(() => {
+    if (!persona || contentMix || loadingContentMix) return
 
-      // 触发回调
-      if (data.day_1_detail && onDay1Loaded) {
-        console.log('[SSE] 触发Day1回调')
-        onDay1Loaded(data.day_1_detail)
-      }
-      if (data.month_plan && onCalendarLoaded) {
-        console.log('[SSE] 触发Calendar回调')
-        onCalendarLoaded(data.month_plan)
-      }
-    })
+    console.log('[Strategy] 📤 Loading Content Mix...')
+    setLoadingContentMix(true)
 
-    // 监听完成事件
-    eventSource.addEventListener('complete', (e) => {
-      const data = JSON.parse(e.data)
-      setStrategy(data)
-      setProgress(100)
-      console.log(`[SSE] Completed - Generation time: ${data.generation_time_ms}ms`)
+    fetch(`/api/audit/${auditId}/strategy/content-mix`, { method: 'POST' })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          console.log('[Strategy] ✅ Content Mix loaded')
+          setContentMix(data.content_mix_chart)
+          if (onProgressUpdate) onProgressUpdate(40)
+        } else {
+          throw new Error(data.message || 'Failed to load content mix')
+        }
+      })
+      .catch(err => {
+        console.error('[Strategy] ❌ Content Mix failed:', err)
+      })
+      .finally(() => setLoadingContentMix(false))
+  }, [auditId, persona, contentMix, loadingContentMix])
 
-      // 触发所有回调 (确保Day1和Calendar数据被传递)
-      if (data.execution_calendar?.day_1_detail && onDay1Loaded) {
-        console.log('[SSE Complete] 触发Day1回调')
-        onDay1Loaded(data.execution_calendar.day_1_detail)
-      }
-      if (data.execution_calendar?.month_plan && onCalendarLoaded) {
-        console.log('[SSE Complete] 触发Calendar回调, length:', data.execution_calendar.month_plan.length)
-        onCalendarLoaded(data.execution_calendar.month_plan)
-      }
+  useEffect(() => {
+    if (!persona || audience || loadingAudience) return
 
-      // 通知父组件数据已加载
-      if (onDataLoaded) {
-        onDataLoaded(data)
-      }
+    console.log('[Strategy] 📤 Loading Target Audience...')
+    setLoadingAudience(true)
 
-      eventSource.close()
-    })
+    fetch(`/api/audit/${auditId}/strategy/audience`, { method: 'POST' })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          console.log('[Strategy] ✅ Target Audience loaded')
+          setAudience(data.target_audience)
+          if (onProgressUpdate) onProgressUpdate(60)
+        } else {
+          throw new Error(data.message || 'Failed to load audience')
+        }
+      })
+      .catch(err => {
+        console.error('[Strategy] ❌ Target Audience failed:', err)
+      })
+      .finally(() => setLoadingAudience(false))
+  }, [auditId, persona, audience, loadingAudience])
 
-    // 监听心跳
-    eventSource.addEventListener('ping', (e) => {
-      console.log('[SSE] Heartbeat received')
-    })
-
-    // 监听错误
-    eventSource.addEventListener('error', (e: any) => {
-      console.error('[SSE] Error:', e)
-
-      // 检查是否是数据错误(而非网络错误)
-      if (e.data) {
-        try {
-          const errorData = JSON.parse(e.data)
-          if (errorData.error === 'AI_GENERATION_FAILED' && errorData.message.includes('Diagnosis data not ready')) {
-            setError('Diagnosis data is not ready yet, please refresh the page in a moment')
-            eventSource.close()
-            return
-          }
-        } catch {}
-      }
-
-      setError('Connection lost, attempting to reconnect...')
-      eventSource.close()
-
-      // 降级到轮询
-      setTimeout(() => {
-        fallbackToPolling(auditId, setStrategy, setProgress, setError)
-      }, 2000)
-    })
-
-    // 清理函数
-    return () => {
-      console.log('[SSE] Closing connection')
-      eventSource.close()
+  // 3. 通知父组件数据已加载（当所有模块完成时）
+  useEffect(() => {
+    if (persona && contentMix && audience && onDataLoaded) {
+      console.log('[Strategy] ✅ All modules loaded, notifying parent')
+      onDataLoaded({
+        strategy_section: {
+          brand_persona: persona,
+          content_mix_chart: contentMix,
+          target_audience: audience
+        }
+      })
+      if (onProgressUpdate) onProgressUpdate(100)
     }
-  }, [auditId])
+  }, [persona, contentMix, audience])
 
   // 加载状态 - 初始连接中
-  if (!strategy && progress === 0) {
-    return <AIThinkingAnimation phase={phase} progress={progress} error={error} />
+  if (!persona && loadingPersona) {
+    return <AIThinkingAnimation message="Generating brand persona..." />
   }
 
   // 渲染策略内容 (渐进式显示)
   return (
     <div className="space-y-8 mb-8">
       {/* 品牌人设 - 数据或骨架屏 */}
-      {strategy?.strategy_section?.brand_persona ? (
+      {persona ? (
         <div className="bg-white border border-sand-200 p-10 shadow-sm">
-        <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">
-          Brand Persona
-        </h2>
-        <div className="bg-sand-50 border border-sand-200 p-6">
-          <h3 className="font-serif text-2xl font-bold text-charcoal-900 mb-3">
-            {strategy.strategy_section?.brand_persona?.archetype}
-          </h3>
-          <p className="font-sans text-base text-charcoal-800 leading-relaxed mb-4">
-            {strategy.strategy_section?.brand_persona?.tone_voice}
-          </p>
-          <div className="bg-white border border-sand-200 p-4">
-            <p className="font-sans text-xs text-charcoal-600 mb-1 font-semibold">
-              Optimized Bio:
+          <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">
+            Brand Persona
+          </h2>
+          <div className="bg-sand-50 border border-sand-200 p-6">
+            <h3 className="font-serif text-2xl font-bold text-charcoal-900 mb-3">
+              {persona.archetype}
+            </h3>
+            <p className="font-sans text-base text-charcoal-800 leading-relaxed mb-4">
+              {persona.tone_voice}
             </p>
-            <p className="font-sans text-sm text-charcoal-900">
-              {strategy.strategy_section?.brand_persona?.one_liner_bio}
-            </p>
+            <div className="bg-white border border-sand-200 p-4">
+              <p className="font-sans text-xs text-charcoal-600 mb-1 font-semibold">
+                Optimized Bio:
+              </p>
+              <p className="font-sans text-sm text-charcoal-900">
+                {persona.one_liner_bio}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
-      ) : progress >= 10 ? (
+      ) : (
         <SkeletonCardLarge title="Brand Persona" message="Generating brand persona..." />
-      ) : null}
+      )}
 
       {/* 内容配比 - 数据或骨架屏 */}
-      {strategy?.strategy_section?.content_mix_chart ? (
+      {contentMix ? (
         <div className="bg-white border border-sand-200 p-10 shadow-sm">
           <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">
             Content Mix Strategy
           </h2>
-          <ContentMixPieChart data={strategy.strategy_section.content_mix_chart} />
+          <ContentMixPieChart data={contentMix} />
         </div>
-      ) : progress >= 25 && strategy?.strategy_section?.brand_persona ? (
+      ) : persona ? (
         <SkeletonCardLarge title="Content Mix Strategy" message="Generating content mix strategy..." />
       ) : null}
 
       {/* 目标受众 - 数据或骨架屏 */}
-      {strategy?.strategy_section?.target_audience ? (
+      {audience ? (
         <div className="bg-white border border-sand-200 p-10 shadow-sm">
           <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">
             Target Audience Analysis
           </h2>
           <div className="grid md:grid-cols-2 gap-6">
-            {strategy.strategy_section.target_audience.map((audience: any, i: number) => (
+            {audience.map((audienceItem: any, i: number) => (
               <div key={i} className="bg-sand-50 border border-sand-200 p-6">
                 <span className="inline-block bg-charcoal-900 text-white px-3 py-1.5 font-sans text-xs font-bold mb-3">
-                  {audience.type === 'Main' ? 'Main' : 'Secondary'}
+                  {audienceItem.type === 'Main' ? 'Main' : 'Secondary'}
                 </span>
                 <h4 className="font-serif text-lg font-bold text-charcoal-900 mb-2">
-                  {audience.description}
+                  {audienceItem.description}
                 </h4>
                 <p className="font-sans text-sm text-charcoal-600">
-                  <span className="font-semibold">Pain Point:</span> {audience.pain_point}
+                  <span className="font-semibold">Pain Point:</span> {audienceItem.pain_point}
                 </p>
               </div>
             ))}
           </div>
         </div>
-      ) : progress >= 35 && strategy?.strategy_section?.content_mix_chart ? (
+      ) : persona ? (
         <SkeletonCardLarge title="Target Audience Analysis" message="Analyzing target audience..." />
       ) : null}
     </div>
@@ -381,21 +360,9 @@ function ContentMixPieChart({ data }: { data: Array<{ label: string; percentage:
 }
 
 /**
- * AI思考动画组件
+ * AI思考动画组件 - 简化版
  */
-function AIThinkingAnimation({ phase, progress, error }: {
-  phase: string
-  progress: number
-  error: string | null
-}) {
-  const PHASE_MESSAGES: Record<string, string> = {
-    loading: 'Loading data...',
-    analyzing: 'Analyzing account features...',
-    generating_persona: 'Designing brand persona...',
-    building_calendar: 'Planning 30-day content calendar...',
-    finalizing: 'Finalizing strategy generation...'
-  }
-
+function AIThinkingAnimation({ message }: { message: string }) {
   return (
     <div className="bg-white border border-sand-200 p-10 shadow-sm">
       <div className="text-center max-w-md mx-auto">
@@ -406,11 +373,6 @@ function AIThinkingAnimation({ phase, progress, error }: {
             className="absolute inset-0 border-4 border-charcoal-900 rounded-full border-t-transparent animate-spin"
             style={{ animationDuration: '1.5s' }}
           ></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="font-sans text-lg font-bold text-charcoal-900">
-              {progress}%
-            </span>
-          </div>
         </div>
 
         {/* 状态文字 */}
@@ -418,22 +380,8 @@ function AIThinkingAnimation({ phase, progress, error }: {
           AI is crafting your strategy...
         </h3>
         <p className="font-sans text-sm text-charcoal-600 mb-4">
-          {PHASE_MESSAGES[phase] || 'Processing...'}
+          {message}
         </p>
-
-        {/* 进度条 */}
-        <div className="w-full bg-sand-100 h-2 overflow-hidden mb-4">
-          <div
-            className="bg-sage h-2 transition-all duration-500"
-            style={{ width: `${progress}%` }}
-          ></div>
-        </div>
-
-        {error && (
-          <div className="bg-terracotta-light border-l-4 border-terracotta p-3 mb-4">
-            <p className="font-sans text-xs text-charcoal-800">{error}</p>
-          </div>
-        )}
 
         <p className="font-sans text-xs text-charcoal-600">
           This usually takes 15-30 seconds
@@ -443,59 +391,3 @@ function AIThinkingAnimation({ phase, progress, error }: {
   )
 }
 
-/**
- * 降级到轮询的备用方案
- */
-async function fallbackToPolling(
-  auditId: string,
-  setStrategy: Function,
-  setProgress: Function,
-  setError: Function
-) {
-  console.log('[Polling] Starting fallback polling')
-  setError(null)
-
-  let attempts = 0
-  const maxAttempts = 60  // 最多2分钟
-
-  const poll = async () => {
-    try {
-      const res = await fetch(`/api/audit/${auditId}/status`)
-
-      if (!res.ok) {
-        throw new Error('Polling failed')
-      }
-
-      const data = await res.json()
-
-      setProgress(data.progress || 0)
-
-      if (data.status === 'completed' && data.strategy_section) {
-        setStrategy({
-          strategy_section: data.strategy_section,
-          execution_calendar: data.execution_calendar
-        })
-        console.log('[Polling] Strategy received')
-        return
-      }
-
-      if (data.status === 'failed') {
-        setError('AI generation failed, please refresh and try again')
-        return
-      }
-
-      attempts++
-      if (attempts < maxAttempts) {
-        setTimeout(poll, 2000)  // Poll every 2 seconds
-      } else {
-        setError('Generation timeout, please refresh and try again')
-      }
-
-    } catch (err) {
-      console.error('[Polling] Error:', err)
-      setError('Connection failed, please check network')
-    }
-  }
-
-  poll()
-}

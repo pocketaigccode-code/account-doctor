@@ -29,10 +29,51 @@ interface ExecutionCalendarProps {
 export function ExecutionCalendar({ calendar }: ExecutionCalendarProps) {
   const params = useParams()
   const auditId = params?.auditId as string
-  const [monthPlan, setMonthPlan] = useState(calendar?.month_plan || null)
-  const [isLoadingCalendar, setIsLoadingCalendar] = useState(false)
 
-  // 如果month_plan为null,尝试异步加载
+  // Day 1 异步加载
+  const [day1Detail, setDay1Detail] = useState(calendar?.day_1_detail || null)
+  const [isLoadingDay1, setIsLoadingDay1] = useState(false)
+
+  // Month Plan 异步加载
+  const [monthPlan, setMonthPlan] = useState(calendar?.month_plan || null)
+  const [isLoadingMonth, setIsLoadingMonth] = useState(false)
+
+  // 异步加载 Day 1
+  useEffect(() => {
+    // 初始化day1Detail state
+    if (calendar?.day_1_detail && !day1Detail) {
+      setDay1Detail(calendar.day_1_detail)
+      return
+    }
+
+    // 如果已有day1Detail或正在加载,跳过
+    if (day1Detail || isLoadingDay1 || !auditId) {
+      return
+    }
+
+    console.log('[Calendar] 检测到day_1_detail为null,启动异步加载')
+    setIsLoadingDay1(true)
+
+    // 调用day1 API
+    fetch(`/api/audit/${auditId}/strategy/day1`, { method: 'POST' })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.day_1_detail) {
+          console.log('[Calendar] ✅ Day 1内容加载成功')
+          setDay1Detail(data.day_1_detail)
+        } else {
+          console.error('[Calendar] ❌ Day 1加载失败:', data)
+        }
+      })
+      .catch(error => {
+        console.error('[Calendar] ❌ Day 1请求失败:', error)
+      })
+      .finally(() => {
+        setIsLoadingDay1(false)
+      })
+  }, [auditId, day1Detail, isLoadingDay1])
+
+  // 异步加载 Month Plan
   useEffect(() => {
     // 初始化monthPlan state
     if (calendar?.month_plan && !monthPlan) {
@@ -41,17 +82,17 @@ export function ExecutionCalendar({ calendar }: ExecutionCalendarProps) {
     }
 
     // 如果已有monthPlan或正在加载,跳过
-    if (monthPlan || isLoadingCalendar || !auditId) {
+    if (monthPlan || isLoadingMonth || !auditId) {
       return
     }
 
     // 只在有day1但没有month_plan时触发
-    if (!calendar?.day_1_detail) {
+    if (!day1Detail) {
       return
     }
 
     console.log('[Calendar] 检测到month_plan为null,启动异步加载')
-    setIsLoadingCalendar(true)
+    setIsLoadingMonth(true)
 
     // 调用calendar API
     fetch(`/api/audit/${auditId}/strategy/calendar`, { method: 'POST' })
@@ -61,18 +102,34 @@ export function ExecutionCalendar({ calendar }: ExecutionCalendarProps) {
           console.log('[Calendar] ✅ 月度计划加载成功, length:', data.month_plan.length)
           setMonthPlan(data.month_plan)
         } else {
-          console.error('[Calendar] ❌ 加载失败:', data)
+          console.error('[Calendar] ❌ 月度计划加载失败:', data)
         }
       })
       .catch(error => {
-        console.error('[Calendar] ❌ 请求失败:', error)
+        console.error('[Calendar] ❌ 月度计划请求失败:', error)
       })
       .finally(() => {
-        setIsLoadingCalendar(false)
+        setIsLoadingMonth(false)
       })
-  }, [auditId, monthPlan, isLoadingCalendar])
+  }, [auditId, day1Detail, monthPlan, isLoadingMonth])
 
-  if (!calendar || !calendar.day_1_detail) {
+  // 如果Day1正在加载或还没有数据,显示加载动画
+  if (!day1Detail) {
+    if (isLoadingDay1) {
+      return (
+        <div className="bg-white border border-sand-200 p-10 shadow-sm">
+          <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">
+            Smart Content Calendar
+          </h2>
+          <div className="flex flex-col items-center justify-center py-16">
+            <MonthPlanLoadingAnimation />
+            <p className="font-sans text-lg font-bold text-charcoal-900 mt-8">
+              Creating Day 1 content...
+            </p>
+          </div>
+        </div>
+      )
+    }
     return null
   }
 
@@ -96,12 +153,12 @@ export function ExecutionCalendar({ calendar }: ExecutionCalendarProps) {
             </div>
             <h4 className="font-sans text-xs font-semibold text-charcoal-900 mb-1">Ready to Publish</h4>
             <p className="font-sans text-xs text-charcoal-600 line-clamp-2">
-              {calendar.day_1_detail.caption.substring(0, 40)}...
+              {day1Detail.caption.substring(0, 40)}...
             </p>
           </div>
 
           {/* Day 2-7 - 已规划 或 加载中 */}
-          {!monthPlan && isLoadingCalendar ? (
+          {!monthPlan && isLoadingMonth ? (
             // Loading animation placeholder
             <div className="col-span-6 flex flex-col items-center justify-center py-8">
               <MonthPlanLoadingAnimation />
