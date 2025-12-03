@@ -61,11 +61,13 @@ export function StrategySection({ auditId, onDataLoaded, onDay1Loaded, onCalenda
   const [persona, setPersona] = useState<any>(null)
   const [contentMix, setContentMix] = useState<any>(null)
   const [audience, setAudience] = useState<any>(null)
+  const [day1, setDay1] = useState<any>(null)  // ⭐ 新增：Day 1状态
 
   // 加载状态
   const [loadingPersona, setLoadingPersona] = useState(false)
   const [loadingContentMix, setLoadingContentMix] = useState(false)
   const [loadingAudience, setLoadingAudience] = useState(false)
+  const [loadingDay1, setLoadingDay1] = useState(false)  // ⭐ 新增：Day 1加载状态
 
   // 错误状态
   const [error, setError] = useState<string | null>(null)
@@ -142,10 +144,38 @@ export function StrategySection({ auditId, onDataLoaded, onDay1Loaded, onCalenda
       .finally(() => setLoadingAudience(false))
   }, [auditId, persona, audience, loadingAudience])
 
-  // 3. 通知父组件数据已加载（当所有模块完成时）
+  // 3. Persona完成后，加载 Day 1 Content（需要Persona数据）
+  useEffect(() => {
+    if (!persona || day1 || loadingDay1) return
+
+    console.log('[Strategy] 📤 Loading Day 1 Content...')
+    setLoadingDay1(true)
+
+    fetch(`/api/audit/${auditId}/strategy/day1`, { method: 'POST' })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          console.log('[Strategy] ✅ Day 1 Content loaded')
+          setDay1(data.day_1_detail)
+          if (onProgressUpdate) onProgressUpdate(80)
+          // ⭐ 通知父组件
+          if (onDay1Loaded) {
+            onDay1Loaded(data.day_1_detail)
+          }
+        } else {
+          console.error('[Strategy] ❌ Day 1 failed:', data.message)
+        }
+      })
+      .catch(err => {
+        console.error('[Strategy] ❌ Day 1 Content failed:', err)
+      })
+      .finally(() => setLoadingDay1(false))
+  }, [auditId, persona, day1, loadingDay1])
+
+  // 4. 通知父组件策略数据已加载（当前3个模块完成时）
   useEffect(() => {
     if (persona && contentMix && audience && onDataLoaded) {
-      console.log('[Strategy] ✅ All modules loaded, notifying parent')
+      console.log('[Strategy] ✅ Strategy modules loaded, notifying parent')
       onDataLoaded({
         strategy_section: {
           brand_persona: persona,
@@ -153,7 +183,6 @@ export function StrategySection({ auditId, onDataLoaded, onDay1Loaded, onCalenda
           target_audience: audience
         }
       })
-      if (onProgressUpdate) onProgressUpdate(100)
     }
   }, [persona, contentMix, audience])
 
