@@ -21,10 +21,11 @@ export interface InstagramPost {
   mediaUrls: string[]
   likeCount: number
   commentCount: number
-  publishedAt: Date
+  publishedAt: Date | null  // ⭐ 修改: 允许null值（无时间戳的帖子）
   type: 'image' | 'video' | 'carousel'
   hashtags?: string[]        // ⭐ 新增: 标签数组
   locationName?: string | null  // ⭐ 新增: 地理位置
+  isPinned?: boolean         // ⭐ 新增: 标识是否为置顶帖
 }
 
 export interface InstagramScanData {

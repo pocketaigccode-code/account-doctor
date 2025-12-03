@@ -53,27 +53,38 @@ export async function scrapeInstagramWithApify(username: string): Promise<Instag
     }
 
     // 转换帖子数据 (提取更多字段)
-    const recentPosts: InstagramPost[] = (profileData.latestPosts || []).map((post: any, index: number) => {
-      // 提取标签
-      const hashtags = extractHashtags(post.caption || '')
+    // ⭐ 修复：过滤置顶帖 + 按时间排序，避免Last Post Date错误
+    const recentPosts: InstagramPost[] = (profileData.latestPosts || [])
+      // 步骤1：过滤掉置顶帖子（避免置顶帖影响Last Post Date判定）
+      .filter((post: any) => !post.isPinned)
+      // 步骤2：按时间戳降序排序（确保最新帖子在前）
+      .sort((a: any, b: any) => {
+        const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0
+        const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0
+        return timeB - timeA  // 降序：最新的在前
+      })
+      // 步骤3：转换为标准格式
+      .map((post: any, index: number) => {
+        // 提取标签
+        const hashtags = extractHashtags(post.caption || '')
 
-      // 调试: 打印原始帖子数据
-      if (index === 0) {
-        console.log('[Apify] 第一篇帖子原始数据:', JSON.stringify(post, null, 2).substring(0, 500))
-      }
+        // 调试: 打印原始帖子数据
+        if (index === 0) {
+          console.log('[Apify] 第一篇帖子原始数据:', JSON.stringify(post, null, 2).substring(0, 500))
+        }
 
-      return {
-        id: post.id || `post_${index}`,
-        caption: post.caption || '',
-        mediaUrls: [post.displayUrl || post.url || post.imageUrl].filter(Boolean),
-        likeCount: post.likesCount || 0,
-        commentCount: post.commentsCount || 0,
-        publishedAt: post.timestamp ? new Date(post.timestamp) : new Date(),
-        type: post.type === 'Video' ? 'video' : post.type === 'Sidecar' ? 'carousel' : 'image',
-        hashtags: hashtags,              // ⭐ 新增
-        locationName: post.locationName,  // ⭐ 新增
-      }
-    })
+        return {
+          id: post.id || `post_${index}`,
+          caption: post.caption || '',
+          mediaUrls: [post.displayUrl || post.url || post.imageUrl].filter(Boolean),
+          likeCount: post.likesCount || 0,
+          commentCount: post.commentsCount || 0,
+          publishedAt: post.timestamp ? new Date(post.timestamp) : null,  // ⭐ 使用null而非new Date()
+          type: post.type === 'Video' ? 'video' : post.type === 'Sidecar' ? 'carousel' : 'image',
+          hashtags: hashtags,
+          locationName: post.locationName,
+        }
+      })
 
     return {
       profile,

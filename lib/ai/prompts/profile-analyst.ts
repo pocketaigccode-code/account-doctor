@@ -145,8 +145,9 @@ IMPORTANT: Return all text in English. Do NOT use Chinese in any JSON values (su
 export function getFastLaneFallback(scanData: InstagramScanData) {
   const { profile, recentPosts } = scanData
 
-  // 计算活跃度
-  const lastPostTimestamp = recentPosts[0]?.publishedAt
+  // 计算活跃度 - 增强空值处理
+  const validPosts = recentPosts.filter(p => p.publishedAt !== null)
+  const lastPostTimestamp = validPosts[0]?.publishedAt
   const daysSinceLastPost = lastPostTimestamp
     ? Math.floor((Date.now() - new Date(lastPostTimestamp).getTime()) / (1000 * 60 * 60 * 24))
     : 999
