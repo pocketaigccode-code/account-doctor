@@ -47,11 +47,17 @@ export async function POST(
       })
     }
 
-    // 2. 准备上下文数据
+    // 2. 准备上下文数据 - 包含帖子示例
+    const recentPosts = audit.apify_raw_data?.recentPosts || []
+    const samplePost = recentPosts[0]?.caption || ''
+    const samplePostShort = samplePost.substring(0, 200) // First 200 chars
+
     const promptContext = {
       category: audit.profile_snapshot?.category_label || '本地商家',
       bio: audit.apify_raw_data?.profile?.biography || '',
-      diagnosis_summary: audit.diagnosis_card?.summary_title || '需要改进'
+      diagnosis_summary: audit.diagnosis_card?.summary_title || '需要改进',
+      recent_posts_sample: samplePostShort,
+      key_issues: audit.diagnosis_card?.key_issues || []
     }
 
     console.log('[Persona API] 🔄 Generating brand persona with AI...')

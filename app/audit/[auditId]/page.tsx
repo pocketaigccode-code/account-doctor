@@ -9,7 +9,7 @@
 import { use, useEffect, useState } from 'react'
 import { ProfileSnapshot } from '@/components/result/ProfileSnapshot'
 import { StrategySection } from '@/components/result/StrategySection'
-import { ExecutionCalendar } from '@/components/result/ExecutionCalendar'
+import { UnifiedStrategyDashboard } from '@/components/result/UnifiedStrategyDashboard'
 
 
 
@@ -143,16 +143,13 @@ export default function AuditResultPage({ params }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-sand-50">
-      {/* Navigation */}
+    <div className="min-h-screen" style={{ background: 'var(--bg-body)' }}>
+      {/* Navigation - 参考Sidewalk极简设计 */}
       <nav className="bg-white/80 backdrop-blur-sm border-b border-sand-200">
-        <div className="max-w-5xl mx-auto px-8 py-5 flex justify-between items-center">
+        <div className="container-sidewalk py-5 flex justify-between items-center">
           <h1 className="font-serif text-charcoal-900 text-xl font-bold">AccountDoctor</h1>
 
           <div className="flex items-center gap-4">
-            {/* 语言切换 */}
-            
-
             {/* 返回首页 */}
             <button
               onClick={() => (window.location.href = '/')}
@@ -164,8 +161,8 @@ export default function AuditResultPage({ params }: PageProps) {
         </div>
       </nav>
 
-      {/* Main Content */}
-      <main className="max-w-5xl mx-auto px-8 py-12">
+      {/* Main Content - 使用Sidewalk容器样式 */}
+      <main className="container-sidewalk" style={{ paddingTop: '60px', paddingBottom: '80px' }}>
         {/* 阶段1: 即时数据 - 立即渲染 */}
         <ProfileSnapshot data={instantData}  />
 
@@ -182,7 +179,8 @@ export default function AuditResultPage({ params }: PageProps) {
         {diagnosisData && (
           <StrategySection
             auditId={auditId}
-            
+            profileData={instantData}
+            diagnosisData={diagnosisData}
             onDataLoaded={setStrategyData}
             onDay1Loaded={setDay1Data}
             onCalendarLoaded={setCalendarData}
@@ -190,22 +188,29 @@ export default function AuditResultPage({ params }: PageProps) {
           />
         )}
 
-        {/* Day 1内容预览 - 独立模块 (progress>=60立即显示骨架屏) */}
-        {diagnosisData && (strategyProgress >= 60 || day1Data) && (
-          <div className="mb-8">
-            {day1Data ? (
-              <Day1Preview day1={day1Data} />
-            ) : (
-              <Day1Skeleton />
-            )}
-          </div>
-        )}
+        {/* Day 1内容已整合到日历中，不再单独显示 */}
 
-        {/* 30天日历 - 独立模块 (有Day1就显示,月度计划异步加载) */}
-        {diagnosisData && day1Data && (
-          <div className="mb-8">
-            <ExecutionCalendar calendar={{ day_1_detail: day1Data, month_plan: calendarData }} />
-          </div>
+        {/* 统一策略仪表板 - 整合Content Mix + Instant Content Fix + 30天日历 */}
+        {diagnosisData && day1Data && calendarData && (
+          <>
+            {strategyData?.strategy_section?.content_mix_chart ? (
+              <UnifiedStrategyDashboard
+                contentMix={strategyData.strategy_section.content_mix_chart}
+                brandPersona={strategyData.strategy_section.brand_persona}
+                calendar={{ day_1_detail: day1Data, month_plan: calendarData }}
+                profileData={instantData}
+                auditId={auditId}
+              />
+            ) : (
+              <div className="bg-white border border-sand-200 p-10 shadow-card">
+                <h2 className="section-title">30-Day Content Calendar</h2>
+                <div className="text-center py-12">
+                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-sage border-t-transparent"></div>
+                  <p className="mt-4 font-sans text-sm text-charcoal-600">Loading strategy dashboard...</p>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>
@@ -218,7 +223,10 @@ export default function AuditResultPage({ params }: PageProps) {
 function DiagnosisCardAIFailed() {
   return (
     <div className="bg-white border border-sand-200 p-10 mb-8 shadow-sm">
-      <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-8">Diagnosis Results</h2>
+      <h2 className="font-serif text-3xl font-bold mb-2">
+        <span className="text-gradient-brand">Missed Traffic Check</span>
+      </h2>
+      <p className="font-sans text-sm text-charcoal-600 mb-8">See exactly where you are losing potential customers in your bio and posts.</p>
 
       <div className="text-center py-12">
         <div className="w-16 h-16 bg-yellow-50 border-2 border-yellow-600 flex items-center justify-center mx-auto mb-4 rounded-full">
@@ -240,64 +248,82 @@ function DiagnosisCardAIFailed() {
 }
 
 /**
- * Day1内容预览组件
+ * Day1内容预览组件 - 参考Sidewalk设计
  */
-function Day1Preview({ day1 }: { day1: any }) {
+function Day1Preview({ day1, profileData }: { day1: any, profileData?: any }) {
   return (
-    <div className="bg-white border border-sand-200 p-10 shadow-sm">
-      <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">
-        Content Preview & Analysis
-      </h2>
+    <div className="section-gap">
+      <h2 className="section-title text-center">Instant Content Fix</h2>
+      <p className="section-subtitle text-center">
+        Don't just get data. Get ready-to-post images and captions generated by AI.
+      </p>
 
-      <div className="grid md:grid-cols-2 gap-10">
-        {/* 左: 图片预览 */}
-        <div>
-          <div className="relative aspect-square bg-gradient-to-br from-sand-100 to-sand-200 border border-sand-200 flex items-center justify-center">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <svg className="w-24 h-24 text-charcoal-600 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
+      {/* 3D手机样机 - 参考Sidewalk设计 */}
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div className="glow-bg"></div>
+
+        <div className="phone-3d">
+          <div style={{ background: 'white', borderRadius: '32px', height: '540px', overflow: 'hidden' }}>
+            {/* Instagram Post Header */}
+            <div style={{ padding: '15px', display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
+              <span style={{ fontWeight: 'bold', fontSize: '12px' }}>
+                {profileData?.handle?.replace('@', '') || 'yourbusiness'}
+              </span>
+              <span>...</span>
             </div>
-            <div className="relative z-10 bg-white border-2 border-charcoal-900 px-6 py-3">
-              <span className="font-serif text-xl font-bold text-charcoal-900">LOGO</span>
+
+            {/* Image Placeholder */}
+            <div style={{ height: '300px', background: '#f3f4f6', display: 'grid', placeItems: 'center' }}>
+              <div style={{ textAlign: 'center' }}>
+                <span style={{ fontSize: '40px' }}>📸</span>
+                <div style={{ fontSize: '12px', background: 'white', padding: '4px 10px', borderRadius: '10px', color: '#ec4899', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', marginTop: '10px' }}>
+                  ✨ AI Generated
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="mt-4 bg-sand-50 border border-sand-200 p-4">
-            <h4 className="font-sans text-xs font-bold text-charcoal-900 mb-2">Image Generation Prompt</h4>
-            <p className="font-sans text-xs text-charcoal-800 leading-relaxed">
-              {day1.image_gen_prompt}
-            </p>
+
+            {/* Post Actions & Caption */}
+            <div style={{ padding: '15px', fontSize: '12px', lineHeight: '1.4' }}>
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                <div style={{ width: '20px', height: '20px', background: '#ef4444', borderRadius: '50%' }}></div>
+                <div style={{ width: '20px', height: '20px', background: '#eee', borderRadius: '50%' }}></div>
+              </div>
+              <strong>{profileData?.handle?.replace('@', '') || 'yourbusiness'}</strong>{' '}
+              {day1.caption.substring(0, 80)}...
+              <br />
+              <span style={{ color: '#00376b' }}>{day1.hashtags.slice(0, 3).join(' ')}</span>
+            </div>
           </div>
         </div>
 
-        {/* 右: 文案 */}
-        <div className="space-y-6">
-          <div>
-            <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-3">Generated Caption</h3>
-            <div className="bg-sand-50 border border-sand-200 p-5">
-              <p className="font-sans text-sm text-charcoal-900 leading-relaxed whitespace-pre-wrap">
-                {day1.caption}
-              </p>
-            </div>
-          </div>
+        {/* Float Buttons */}
+        <div style={{ position: 'absolute', right: '-80px', top: '50%', transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', gap: '15px', zIndex: 3 }}>
+          <div className="float-btn" title="Download">⬇️</div>
+          <div className="float-btn" title="Copy">📋</div>
+        </div>
+      </div>
 
-          <div>
-            <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-3">Recommended Tags</h3>
-            <div className="flex flex-wrap gap-2">
-              {day1.hashtags.map((tag: string, i: number) => (
-                <span key={i} className="bg-sand-100 border border-sand-200 px-3 py-1.5 font-sans text-xs text-charcoal-900">
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
+      {/* Caption & Hashtags Details - 放在手机样机下方 */}
+      <div style={{ marginTop: '60px', maxWidth: '800px', margin: '60px auto 0' }}>
+        <div className="bg-white border border-gray-100 p-8 rounded-xl shadow-card" style={{ marginBottom: '20px' }}>
+          <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '12px' }}>Generated Caption</h3>
+          <p style={{ fontSize: '14px', lineHeight: '1.6', color: '#4b5563' }}>{day1.caption}</p>
+        </div>
 
-          <div className="bg-sage/10 border-l-4 border-sage p-5">
-            <h4 className="font-sans text-sm font-bold text-charcoal-900 mb-2">AI Analysis</h4>
-            <p className="font-sans text-sm text-charcoal-800 leading-relaxed">
-              This content combines brand storytelling with a call to action, building emotional connection through authentic tone. Optimal posting time is Tuesday or Wednesday at 6-8 PM when audience engagement peaks.
-            </p>
+        <div className="bg-white border border-gray-100 p-8 rounded-xl shadow-card" style={{ marginBottom: '20px' }}>
+          <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '12px' }}>Recommended Hashtags</h3>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {day1.hashtags.map((tag: string, i: number) => (
+              <span key={i} className="tag-item" style={{ fontSize: '12px' }}>
+                {tag}
+              </span>
+            ))}
           </div>
+        </div>
+
+        <div className="bg-white border border-gray-100 p-8 rounded-xl shadow-card">
+          <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '12px' }}>Image Generation Prompt</h3>
+          <p style={{ fontSize: '13px', lineHeight: '1.6', color: '#6b7280' }}>{day1.image_gen_prompt}</p>
         </div>
       </div>
     </div>
@@ -385,7 +411,10 @@ function CalendarSkeleton() {
 function DiagnosisCardSkeleton() {
   return (
     <div className="bg-white border border-sand-200 p-10 mb-8 shadow-sm">
-      <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-8">Diagnosis Results</h2>
+      <h2 className="font-serif text-3xl font-bold mb-2">
+        <span className="text-gradient-brand">Missed Traffic Check</span>
+      </h2>
+      <p className="font-sans text-sm text-charcoal-600 mb-8">See exactly where you are losing potential customers in your bio and posts.</p>
 
       {/* 中心双层转圈动画 */}
       <div className="flex flex-col items-center justify-center py-16">
@@ -434,78 +463,98 @@ function DiagnosisCardSkeleton() {
 }
 
 /**
- * DiagnosisCard组件 (诊断卡片)
+ * DiagnosisCard组件 (诊断卡片) - 参考Sidewalk设计
  */
 function DiagnosisCard({ data }: { data: any }) {
   const { score, summary_title, key_issues } = data
 
   const getScoreColor = (s: number) => {
-    if (s >= 80) return { color: '#8DA399', label: 'Excellent' }
-    if (s >= 60) return { color: '#3B82F6', label: 'Good' }
-    if (s >= 40) return { color: '#F59E0B', label: 'Needs Improvement' }
-    return { color: '#d97757', label: 'Warning' }
+    if (s >= 80) return { label: 'EXCELLENT', color: '#10b981' }
+    if (s >= 60) return { label: 'GOOD', color: '#3B82F6' }
+    if (s >= 40) return { label: 'NEEDS WORK', color: '#F59E0B' }
+    return { label: 'WARNING', color: '#ef4444' }
   }
 
   const scoreInfo = getScoreColor(score)
 
-  return (
-    <div className="bg-white border border-sand-200 p-10 mb-8 shadow-sm">
-      <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-8">Diagnosis Results</h2>
+  // 计算半圆仪表盘旋转角度 (0-180度对应0-100分)
+  const rotation = (score / 100) * 180 // 0-100分对应0-180度旋转
 
-      <div className="flex items-start gap-16">
-        {/* 左: 评分圆环 */}
-        <div className="flex-shrink-0 text-center">
-          <div className="relative w-44 h-44 mb-4">
-            <svg className="transform -rotate-90 w-44 h-44">
-              <circle cx="88" cy="88" r="80" stroke="#e6e2d6" strokeWidth="12" fill="none" />
-              <circle
-                cx="88"
-                cy="88"
-                r="80"
-                stroke={scoreInfo.color}
-                strokeWidth="12"
-                fill="none"
-                strokeDasharray={`${2 * Math.PI * 80}`}
-                strokeDashoffset={`${2 * Math.PI * 80 * (1 - score / 100)}`}
-                strokeLinecap="round"
-                className="transition-all duration-1000"
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <div className="font-serif text-5xl font-bold text-charcoal-900">{score}</div>
-              <div className="font-sans text-sm text-charcoal-600 mt-1">/ 100</div>
+  return (
+    <div className="section-gap">
+      {/* Hero Section - 完全参考Sidewalk设计 */}
+      <section className="hero-section rounded-[var(--radius-lg)] shadow-card mb-12">
+        <span className="score-badge">AUDIT COMPLETE</span>
+        <h1 className="hero-title">
+          What's Your <span className="text-gradient-instagram">Instagram Health Score?</span>
+        </h1>
+        <p className="section-subtitle" style={{ marginBottom: '50px' }}>
+          {summary_title}
+        </p>
+
+        {/* 半圆仪表盘 - 完全参考HTML */}
+        <div className="gauge-wrap">
+          <div className="gauge-bg"></div>
+          <div
+            className="gauge-fill"
+            style={{ transform: `rotate(${rotation - 90}deg)` }}
+          ></div>
+          <div className="gauge-center">
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '56px', fontWeight: 800, lineHeight: 1, color: 'var(--text-main)' }}>
+                {score}
+              </div>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: scoreInfo.color }}>
+                {scoreInfo.label}
+              </div>
             </div>
           </div>
-          <div className="inline-block bg-sand-100 px-4 py-1.5 border border-sand-200">
-            <span className="font-sans text-sm font-semibold text-charcoal-900">{scoreInfo.label}</span>
-          </div>
         </div>
 
-        {/* 右: 问题列表 */}
-        <div className="flex-1">
-          <h3 className="font-serif text-xl font-bold text-charcoal-900 mb-2">
-            {summary_title}
-          </h3>
-          <p className="font-sans text-sm text-charcoal-600 mb-6">
-            Based on our analysis, here are the key areas for improvement:
-          </p>
+        {/* 社交证明 */}
+        <div className="social-proof-hero">
+          <div className="avatars">
+            <img src="https://i.pravatar.cc/100?img=1" alt="User 1" />
+            <img src="https://i.pravatar.cc/100?img=5" alt="User 2" />
+            <img src="https://i.pravatar.cc/100?img=8" alt="User 3" />
+          </div>
+          Trusted by 5,000+ local businesses
+        </div>
+      </section>
 
-          <div className="space-y-3">
-            {key_issues.map((issue: string, index: number) => (
-              <div
-                key={index}
-                className="flex gap-3 items-start bg-sand-50 border border-sand-200 p-3"
-              >
-                <div className="flex-shrink-0 w-6 h-6 bg-terracotta text-white flex items-center justify-center font-sans text-xs font-bold">
-                  {index + 1}
-                </div>
-                <p className="font-sans text-sm text-charcoal-800 leading-relaxed flex-1">
-                  {issue}
-                </p>
+      {/* Missed Traffic Check Section - 参考Sidewalk审计卡片设计 */}
+      <h2 className="section-title text-center">Missed Traffic Check</h2>
+      <p className="section-subtitle text-center">
+        Solve these {key_issues.length} issues to rank higher locally.
+      </p>
+
+      <div className="audit-grid">
+        {key_issues.map((issue: string, index: number) => {
+          // 根据位置分配不同图标和颜色
+          const cardStyles = [
+            { icon: '⚡️', bgColor: '#fee2e2', iconColor: '#ef4444', statusText: 'Fix: Add clear CTA', statusColor: '#ef4444' },
+            { icon: '🎨', bgColor: '#fffbeb', iconColor: '#f59e0b', statusText: 'Fix: Improve consistency', statusColor: '#f59e0b' },
+            { icon: '🔍', bgColor: '#d1fae5', iconColor: '#10b981', statusText: 'Status: Optimized', statusColor: '#10b981' },
+          ]
+          const style = cardStyles[index] || cardStyles[0]
+
+          return (
+            <div key={index} className="audit-card">
+              <div className="icon-box" style={{ background: style.bgColor, color: style.iconColor }}>
+                {style.icon}
               </div>
-            ))}
-          </div>
-        </div>
+              <h3 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '10px' }}>
+                Issue #{index + 1}
+              </h3>
+              <p style={{ color: 'var(--text-muted)', marginTop: '10px', fontSize: '14px', lineHeight: '1.6' }}>
+                {issue}
+              </p>
+              <div style={{ color: style.statusColor, fontWeight: 700, marginTop: '10px', fontSize: '14px' }}>
+                {style.statusText}
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
