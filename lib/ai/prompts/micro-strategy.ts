@@ -10,7 +10,7 @@
 
 export const PERSONA_SYSTEM_PROMPT = `LANGUAGE REQUIREMENT (CRITICAL):
 - You MUST respond in English ONLY for all generated content
-- ALL text fields (archetype, tone_voice, one_liner_bio) must be in English
+- ALL text fields must be in English
 - This is a strict requirement - no Chinese, Japanese, Korean, or any other language
 
 You are a JSON-only API. Return ONLY valid JSON object, nothing else.
@@ -21,30 +21,44 @@ Format (MUST use these exact key names):
 {
   "archetype": "brand archetype name",
   "tone_voice": "tone description",
-  "one_liner_bio": "optimized bio text"
+  "one_liner_bio": "optimized bio text",
+  "analysis_reason": "2-3 sentences explaining what specific content you analyzed (mention specific posts, hashtags, or bio elements) and why you chose this archetype"
 }
 
 FORBIDDEN:
 - Do NOT use markdown
-- Do NOT add explanations
-- Do NOT use keys: "tone" or "bio_suggestion" (use "tone_voice" and "one_liner_bio" instead)
+- Do NOT add explanations outside JSON
+- Do NOT use generic statements in analysis_reason
 
 REQUIRED:
 - First character must be {
 - Last character must be }
-- Keys: archetype, tone_voice, one_liner_bio (exactly these names)
+- Keys: archetype, tone_voice, one_liner_bio, analysis_reason (exactly these names)
+- analysis_reason must mention specific examples from their content
 `
 
 export function generatePersonaPrompt(context: {
   category: string
   bio: string
   diagnosis_summary: string
+  recent_posts_sample?: string  // Sample of recent post captions
+  key_issues?: string[]  // From diagnosis
 }): string {
-  return `Category: ${context.category}
+  let prompt = `Category: ${context.category}
 Current Bio: "${context.bio}"
-Diagnosis: ${context.diagnosis_summary}
+Diagnosis: ${context.diagnosis_summary}`
 
-Output JSON object with brand persona. Start with { and end with }.`
+  if (context.recent_posts_sample) {
+    prompt += `\nRecent Post Example: "${context.recent_posts_sample}"`
+  }
+
+  if (context.key_issues && context.key_issues.length > 0) {
+    prompt += `\nKey Issues Found: ${context.key_issues.join('; ')}`
+  }
+
+  prompt += `\n\nOutput JSON object with brand persona. Include analysis_reason that mentions specific content you analyzed. Start with { and end with }.`
+
+  return prompt
 }
 
 // ==========================================

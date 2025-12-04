@@ -14,30 +14,60 @@ LANGUAGE REQUIREMENT (CRITICAL):
 - No Chinese, Japanese, Korean, or any other language
 
 # Role
-你是一个 Instagram 账号数据分析专家。你的任务是接收原始的 JSON 数据(由 Apify 抓取),提取关键业务字段,并对账号的健康度进行客观诊断。
+You are an Instagram profile diagnostics expert. Your task is to analyze raw JSON data from Apify and provide a structured health assessment.
 
-# Analysis Logic (诊断逻辑)
-1. **活跃度判定 (Activity Status)**:
-   - Active: 最新贴在 7 天内
-   - Dormant: 最新贴在 7-30 天内
-   - Inactive: 最新贴 > 30 天
+# Key Issues Analysis (CRITICAL - Must be 3 distinct dimensions)
+You MUST provide exactly 3 key issues, each from a DIFFERENT dimension. Do NOT repeat issues from the same category.
 
-2. **完整性检查 (Profile Completeness)**:
-   - 检查是否有 Website Link (externalUrl)
-   - 检查 Bio 中是否包含 Location 信息(地址、城市名等)
+**Dimension 1: SEO & Discoverability** (Keywords, Location, Bio clarity)
+Examples:
+- Missing location in bio (city/address)
+- No local keywords in bio (e.g., "Seattle Coffee Shop")
+- Bio doesn't clearly state what the business does
+- Missing geotag in recent posts
 
-3. **行业推断 (Category Inference)**:
-   - 优先使用 businessCategoryName
-   - 如果为空,根据 biography 和 username 推断最可能的本地商业类型
+**Dimension 2: Visual Appeal** (Profile photo, Grid consistency, Aesthetic)
+Examples:
+- Low-quality or unprofessional profile photo
+- Inconsistent visual style across posts (mixing too many formats)
+- Poor color harmony or branding in grid
+- No recognizable brand identity in feed
 
-4. **健康度打分 (Health Score)**:
-   - 满分 100 分,基础分 60
-   - 扣分项:
-     * 不活跃(-20): Inactive状态
-     * 不活跃(-10): Dormant状态
-     * 无链接(-10): 缺少externalUrl
-     * 无地址(-10): Bio中无location信息
-     * 标签混乱(-10): hashtags使用不当或过于通用
+**Dimension 3: Conversion Path** (CTA, Link in bio, Action prompts)
+Examples:
+- No website link in bio
+- Missing clear call-to-action (e.g., "Book Now", "Visit Us")
+- No link to booking/ordering system
+- Bio doesn't tell visitors what to do next
+
+# Important Rules
+1. Each key issue MUST come from a DIFFERENT dimension
+2. If a dimension has no obvious problems, suggest a growth opportunity instead
+3. Do NOT mention hashtags in multiple issues - pick ONE dimension for hashtag feedback
+4. Be specific and actionable (e.g., "Add '123 Main St, Seattle' to bio" instead of "Missing location")
+
+# Analysis Logic
+1. **Activity Status**:
+   - Active: Last post within 7 days
+   - Dormant: Last post 7-30 days ago
+   - Inactive: Last post > 30 days
+
+2. **Profile Completeness**:
+   - Check for Website Link (externalUrl)
+   - Check Bio for Location info
+   - Check for clear business description
+
+3. **Category Inference**:
+   - Use businessCategoryName if available
+   - Otherwise infer from biography and username
+
+4. **Health Score** (Base: 60, Max: 100):
+   - Deductions:
+     * Inactive (-20)
+     * Dormant (-10)
+     * No website link (-10)
+     * No location in bio (-10)
+     * Poor hashtag strategy (-10)
 
 # Output Format
 必须输出为严格的 JSON 格式,不包含任何 Markdown 标记或代码块符号:
@@ -263,7 +293,7 @@ function inferCategory(profile: any): string {
 }
 
 /**
- * 生成关键问题列表
+ * Generate key issues list - strictly separated into 3 distinct dimensions
  */
 function generateKeyIssues(
   profile: any,
@@ -273,91 +303,66 @@ function generateKeyIssues(
 ): string[] {
   const issues: string[] = []
 
-  // 问题1: 活跃度
-  if (activityStatus === 'Inactive') {
-    issues.push(
-      `账号已超过30天未更新,Instagram算法会大幅降低你的内容曝光率,建议立即恢复规律发布`
-    )
-  } else if (activityStatus === 'Dormant') {
-    issues.push(
-      `发帖频率偏低(${Math.floor((Date.now() - new Date(recentPosts[0].publishedAt).getTime()) / (1000 * 60 * 60 * 24))}天前),建议保持每周2-3次的规律更新`
-    )
-  } else {
-    issues.push(
-      `账号保持活跃状态 ✅,继续保持当前的发布频率`
-    )
-  }
-
-  // 问题2: 转化设置
-  if (missingElements.includes('Website')) {
-    issues.push(
-      `Bio缺少网站链接,白白流失了引流到官网、预订页面或WhatsApp的机会,建议添加Linktree或官网链接`
-    )
-  }
-
+  // === Dimension 1: SEO & Discoverability ===
   if (missingElements.includes('Location')) {
     issues.push(
-      `Bio缺少地址信息,本地客户难以找到门店位置,建议添加完整地址或至少城市名称`
+      `Missing location in bio - add your full address or at least city name (e.g., "123 Main St, Seattle") so local customers can find you in search results`
     )
-  }
-
-  // 问题3: 标签策略
-  const allHashtags = recentPosts.flatMap(p => p.hashtags || [])
-
-  if (allHashtags.length === 0) {
+  } else if (!profile.biography?.toLowerCase().includes(profile.businessCategoryName?.toLowerCase() || 'business')) {
     issues.push(
-      `最近帖子完全没有使用Hashtag标签,严重影响内容的可发现性,建议每篇帖子使用8-15个相关标签`
+      `Bio lacks SEO keywords - add your business type + location (e.g., "Best Coffee in Seattle") to improve local search visibility`
     )
   } else {
-    // 检查是否有本地标签
-    const hasLocalTag = allHashtags.some((tag: string) =>
-      /nyc|seattle|la|sf|chicago|miami|boston|austin|portland|denver/i.test(tag)
-    )
-
-    if (!hasLocalTag && profile.businessCategoryName) {
+    // Check hashtag strategy (only mention here once)
+    const allHashtags = recentPosts.flatMap(p => p.hashtags || [])
+    if (allHashtags.length === 0) {
       issues.push(
-        `未使用本地标签(如#城市名+行业),错失本地客户搜索流量,建议使用#${profile.businessCategoryName}Seattle类似的标签`
+        `No hashtags used in recent posts - add 8-15 relevant local tags (e.g., #SeattleCoffee) to boost discoverability by 300%`
       )
-    }
-
-    // 检查通用无效标签
-    const genericTags = allHashtags.filter((tag: string) =>
-      /#(love|like|follow|instagood|photooftheday|beautiful|happy|cute|fashion|style)/i.test(tag)
-    )
-
-    if (genericTags.length > allHashtags.length * 0.5) {
+    } else {
       issues.push(
-        `超过50%的标签过于通用(#love, #instagood等),建议使用更精准的行业标签和长尾标签`
+        `Good SEO foundation ✅ - consider adding more geo-specific hashtags to capture local traffic`
       )
     }
   }
 
-  // 问题4: 视觉一致性
+  // === Dimension 2: Visual Appeal ===
   if (recentPosts.length >= 5) {
     const typeDistribution = recentPosts.reduce((acc: any, post) => {
       acc[post.type] = (acc[post.type] || 0) + 1
       return acc
     }, {})
-
     const uniqueTypes = Object.keys(typeDistribution).length
 
     if (uniqueTypes > 2 && recentPosts.length > 8) {
       issues.push(
-        `帖子格式过于分散(图文/视频/轮播混杂),建议形成固定的视觉风格,如统一使用轮播图或Reels`
+        `Visual inconsistency - your feed mixes ${uniqueTypes} different formats. Stick to 1-2 formats (e.g., carousel + reels) for a cohesive brand look`
+      )
+    } else {
+      issues.push(
+        `Visual consistency looks good ✅ - maintain this format ratio to strengthen brand recognition`
       )
     }
-  }
-
-  // 问题5: 互动率
-  const engagementRate = profile.followerCount > 0
-    ? (recentPosts.reduce((sum, p) => sum + p.likeCount + p.commentCount, 0) / recentPosts.length) / profile.followerCount
-    : 0
-
-  if (engagementRate < 0.01 && profile.followerCount > 1000) {
+  } else {
     issues.push(
-      `互动率偏低(<1%),内容可能与受众兴趣不匹配,建议增加提问、投票等互动型内容`
+      `Profile photo quality check - ensure it's high-resolution, well-lit, and recognizable even at thumbnail size`
     )
   }
 
-  return issues.slice(0, 3)
+  // === Dimension 3: Conversion Path ===
+  if (missingElements.includes('Website')) {
+    issues.push(
+      `No link in bio - you're losing potential customers who want to book/order. Add Linktree or direct website link immediately`
+    )
+  } else if (!profile.biography?.match(/(book|order|visit|call|dm|shop)/i)) {
+    issues.push(
+      `Bio lacks clear CTA - tell visitors exactly what to do next (e.g., "📞 Call to book" or "🔗 Order online below")`
+    )
+  } else {
+    issues.push(
+      `Conversion path setup ✅ - optimize by testing different CTAs to see what drives more clicks`
+    )
+  }
+
+  return issues
 }
