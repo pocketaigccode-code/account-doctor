@@ -22,7 +22,10 @@ export async function GET(request: NextRequest) {
       'scontent-sjc3-1.cdninstagram.com',
       'scontent-sjc6-1.cdninstagram.com',
       'scontent.cdninstagram.com',
-      'cdninstagram.com'
+      'cdninstagram.com',
+      'fbcdn.net',              // Instagram新域名格式
+      'fna.fbcdn.net',         // Facebook CDN
+      'instagram.fbcdn.net'    // Instagram Facebook CDN
     ]
 
     const urlObj = new URL(imageUrl)

@@ -50,10 +50,28 @@ export default function Home() {
       console.log('📊 [诊断卡片 - diagnosis_card]:', data.diagnosis_card)
       console.log('⏱️ [性能指标]:', data.performance)
 
+      // 验证audit_id是否存在
+      if (!data.audit_id) {
+        console.error('❌ [跳转失败] audit_id不存在:', data)
+        throw new Error('数据异常：缺少audit_id，请重试')
+      }
+
+      console.log(`🔄 [跳转中] 正在跳转到: /audit/${data.audit_id}`)
+
       // 跳转到新的结果页
       router.push(`/audit/${data.audit_id}`)
 
+      // 设置5秒超时保护：如果跳转失败，允许用户重试
+      setTimeout(() => {
+        if (window.location.pathname === '/') {
+          console.error('⚠️ [跳转超时] 5秒后仍未跳转，可能是路由问题')
+          setError('页面跳转失败，请刷新后重试或直接访问：/audit/' + data.audit_id)
+          setIsLoading(false)
+        }
+      }, 5000)
+
     } catch (err) {
+      console.error('❌ [请求失败]:', err)
       setError((err as Error).message || 'An error occurred, please try again')
       setIsLoading(false)
     }
