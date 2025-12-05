@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { AILoadingAnimation } from '@/components/loading/AILoadingAnimation'
+import { InfiniteTestimonials } from '@/components/home/InfiniteTestimonials'
 
 export default function Home() {
   const router = useRouter()
@@ -99,23 +101,19 @@ export default function Home() {
 
               {isLoading && (
                 <div className="text-center mt-6">
-                  <div className="inline-block bg-white border-2 border-sand-300 px-8 py-6">
-                    <p className="text-xs font-sans font-bold text-charcoal-900 mb-4 uppercase tracking-widest">ANALYZING</p>
-                    <div className="space-y-2 text-left">
-                      <div className="flex items-center gap-3 text-sm font-sans">
-                        <span className="text-sage">✓</span>
-                        <span className="text-charcoal-900">Fetching data</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-sm font-sans">
-                        <div className="w-4 h-4 border-2 border-charcoal-900 border-t-transparent rounded-full animate-spin"></div>
-                        <span className="text-charcoal-900 font-medium">AI analyzing...</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-sm font-sans">
-                        <span className="text-sand-400">○</span>
-                        <span className="text-charcoal-400">Generating report</span>
-                      </div>
-                    </div>
-                  </div>
+                  <AILoadingAnimation
+                    steps={[
+                      { title: 'Connecting Account', detail: `Verifying @${username}...`, progress: 10 },
+                      { title: 'Fetching Data', detail: 'Downloading recent posts & reels...', progress: 30 },
+                      { title: 'AI Vision Analysis', detail: 'Scanning visual consistency & color palette...', progress: 55 },
+                      { title: 'Calculating Score', detail: 'Comparing engagement against local competitors...', progress: 75 },
+                      { title: 'Finalizing Report', detail: 'Generating optimization strategy...', progress: 90 },
+                      { title: 'Done!', detail: 'Redirecting to your dashboard...', progress: 100 }
+                    ]}
+                    icon="⚡️"
+                    autoPlay={true}
+                    stepInterval={3300}
+                  />
                 </div>
               )}
             </form>
@@ -164,63 +162,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="max-w-5xl mx-auto px-8 pt-4 pb-8">
-        <div className="text-center mb-8">
-          <p className="font-sans text-xs text-charcoal-600 mb-1 uppercase tracking-wider">Testimonials</p>
-          <h2 className="font-serif text-3xl font-bold text-charcoal-900">What Local Business Owners Say</h2>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-5">
-          {/* Testimonial 1 */}
-          <div className="bg-gradient-to-br from-orange-50 to-pink-50 border-2 border-orange-100 p-6 rounded-xl">
-            <div className="flex items-start gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                SC
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-sans text-sm font-bold text-charcoal-900">Sarah Chen</p>
-                <p className="font-sans text-xs text-charcoal-600">@sarahscoffee</p>
-              </div>
-            </div>
-            <p className="font-sans text-sm text-charcoal-800 leading-relaxed">
-              "AccountDoctor found issues I didn't even know existed. The AI-generated content saved me hours of work each week!"
-            </p>
-          </div>
-
-          {/* Testimonial 2 */}
-          <div className="bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-100 p-6 rounded-xl">
-            <div className="flex items-start gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                MR
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-sans text-sm font-bold text-charcoal-900">Maria Rodriguez</p>
-                <p className="font-sans text-xs text-charcoal-600">@mariesnails</p>
-              </div>
-            </div>
-            <p className="font-sans text-sm text-charcoal-800 leading-relaxed">
-              "My engagement doubled after implementing their recommendations. The traffic check showed me exactly what I was missing."
-            </p>
-          </div>
-
-          {/* Testimonial 3 */}
-          <div className="bg-gradient-to-br from-pink-50 to-purple-50 border-2 border-pink-100 p-6 rounded-xl">
-            <div className="flex items-start gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                JT
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-sans text-sm font-bold text-charcoal-900">James Turner</p>
-                <p className="font-sans text-xs text-charcoal-600">@jameshomes</p>
-              </div>
-            </div>
-            <p className="font-sans text-sm text-charcoal-800 leading-relaxed">
-              "Finally, actionable insights instead of just numbers. The competitor analysis helped me rank #1 in my area."
-            </p>
-          </div>
-        </div>
-      </section>
+      {/* Testimonials - 无限滚动轮播 */}
+      <InfiniteTestimonials />
 
       {/* Footer */}
       <footer className="border-t border-sand-200 bg-white py-8">

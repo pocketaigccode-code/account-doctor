@@ -109,14 +109,6 @@ export function ProfileSnapshot({ data }: ProfileSnapshotProps) {
         </div>
       </div>
 
-      {/* Alert Box - 参考Sidewalk警告框 */}
-      {hasAIEnhancement && data.missing_elements && data.missing_elements.length > 0 && (
-        <div className="alert-box">
-          <span style={{ fontSize: '20px' }}>⚠️</span>
-          <span>Optimization Suggestion: {data.missing_elements.join(', ')}</span>
-        </div>
-      )}
-
       {/* Recent Posts Gallery - 参考Sidewalk 5列网格 */}
       {data.recent_posts_preview && data.recent_posts_preview.length > 0 && (
         <>

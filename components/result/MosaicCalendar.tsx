@@ -6,7 +6,10 @@
 
 'use client'
 
+import { useEffect, useState } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
+import { fetchPexelsImages } from '@/lib/pexels-helper'
+import { trackClick } from '@/lib/analytics-tracker'
 
 interface MosaicCalendarProps {
   day1Detail: {
@@ -42,7 +45,7 @@ const CHART_COLORS = [
 ]
 
 /**
- * 根据Content Mix比例分配30天的内容主题
+ * 根据Content Mix比例分配30天的内容主题（随机分布）
  */
 function distributeContentByMix(
   contentMix: Array<{ label: string; percentage: number }>,
@@ -68,7 +71,15 @@ function distributeContentByMix(
   }
 
   // 如果超过30天，截断
-  return distribution.slice(0, totalDays)
+  const result = distribution.slice(0, totalDays)
+
+  // 🎲 随机打乱顺序（保持比例不变）
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]]
+  }
+
+  return result
 }
 
 export function MosaicCalendar({
@@ -79,6 +90,34 @@ export function MosaicCalendar({
   profileData,
   auditId
 }: MosaicCalendarProps) {
+  // Pexels 图片状态
+  const [pexelsImages, setPexelsImages] = useState<string[]>([])
+  const [loadingImages, setLoadingImages] = useState(false)
+
+  // 加载 Pexels 图片
+  useEffect(() => {
+    const pexelsQuery = (day1Detail as any).pexels_query
+    if (!pexelsQuery) {
+      console.log('[MosaicCalendar] ⚠️ No pexels_query found in day1Detail')
+      return
+    }
+
+    setLoadingImages(true)
+    console.log(`[MosaicCalendar] 📸 Loading Pexels images with query: "${pexelsQuery}"`)
+
+    fetchPexelsImages(pexelsQuery, 30)
+      .then(images => {
+        console.log(`[MosaicCalendar] ✅ Loaded ${images.length} Pexels images`)
+        setPexelsImages(images)
+      })
+      .catch(error => {
+        console.error('[MosaicCalendar] ❌ Failed to load Pexels images:', error)
+      })
+      .finally(() => {
+        setLoadingImages(false)
+      })
+  }, [day1Detail])
+
   // 准备完整的30天数据
   const allDays = [
     {
@@ -134,8 +173,14 @@ export function MosaicCalendar({
               </div>
             </div>
 
-            {/* Progress Bar List */}
-            <div className="space-y-3">
+            {/* Compact Horizontal Legend Pills */}
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              gap: '8px',
+              marginTop: '16px'
+            }}>
               {contentMix.map((item, i) => {
                 const color = CHART_COLORS[i % CHART_COLORS.length];
                 const descriptions = [
@@ -145,18 +190,48 @@ export function MosaicCalendar({
                   'Educational content to provide value.',
                   'Promotional content to drive conversions.'
                 ];
+
                 return (
-                  <div key={i}>
-                    <div className="flex justify-between items-center mb-1">
-                      <span style={{ color, fontSize: '13px', fontWeight: 600 }}>{item.label}</span>
-                      <span style={{ fontSize: '13px', fontWeight: 600 }}>{item.percentage}%</span>
-                    </div>
-                    <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div style={{ width: `${item.percentage}%`, background: color, height: '100%' }}></div>
-                    </div>
-                    <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '3px' }}>
-                      {descriptions[i] || 'Content that resonates with your audience.'}
-                    </div>
+                  <div
+                    key={i}
+                    title={descriptions[i]}  // Tooltip on hover
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: '#f4f6f8',
+                      borderRadius: '20px',
+                      padding: '6px 12px',
+                      fontSize: '12px',
+                      cursor: 'help',
+                      transition: 'all 0.2s ease',
+                      border: '1px solid #e5e7eb'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = `${color}15`;
+                      e.currentTarget.style.borderColor = color;
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = '#f4f6f8';
+                      e.currentTarget.style.borderColor = '#e5e7eb';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                    }}
+                  >
+                    {/* 彩色圆点 */}
+                    <div style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      backgroundColor: color,
+                      flexShrink: 0
+                    }}></div>
+                    {/* 类别名称（缩短） */}
+                    <span style={{ fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>
+                      {item.label.length > 15 ? item.label.substring(0, 15) + '...' : item.label}
+                    </span>
+                    {/* 百分比 */}
+                    <span style={{ fontWeight: 700, color: color }}>{item.percentage}%</span>
                   </div>
                 );
               })}
@@ -173,33 +248,112 @@ export function MosaicCalendar({
               {allDays.map((dayData, index) => {
                 const content = contentDistribution[index]
                 const color = content.color
-                const showEmoji = dayData.day === 1 || dayData.day === 5 || dayData.day === 9
+                const hasPexelsImage = pexelsImages.length > index
 
                 return (
-                  <div key={dayData.day} className="cal-cell">
-                    <span>{dayData.day}</span>
+                  <div key={dayData.day} className="cal-cell" style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    position: 'relative',
+                    alignItems: 'center',
+                    justifyContent: 'flex-start'
+                  }}>
+                    {/* 1. 日期徽章：改为绝对定位，悬浮在左上角 */}
+                    <div style={{
+                      position: 'absolute',
+                      top: '4px',
+                      left: '4px',
+                      zIndex: 10,
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      backgroundColor: color,
+                      color: 'white',
+                      display: 'grid',
+                      placeItems: 'center',
+                      fontSize: '8px',
+                      fontWeight: 700,
+                      boxShadow: `0 1px 2px ${color}40`
+                    }}>
+                      {dayData.day}
+                    </div>
 
-                    {showEmoji ? (
+                    {/* 2. 图片区域 */}
+                    {hasPexelsImage ? (
                       <div style={{
-                        background: '#e0e7ff',
-                        color: '#3b82f6',
-                        borderRadius: '4px',
-                        padding: '4px',
-                        textAlign: 'center',
-                        fontSize: '14px'
+                        position: 'relative',
+                        width: '50px',
+                        height: '50px',
+                        borderRadius: '3px',
+                        overflow: 'hidden',
+                        border: `1.5px solid ${color}`,
+                        boxShadow: `0 1px 4px ${color}20`,
+                        flexShrink: 0,
+                        marginBottom: '4px'
                       }}>
-                        📷
+                        <img
+                          src={pexelsImages[index]}
+                          alt={`Day ${dayData.day}`}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            filter: 'blur(1.5px)',
+                            transform: 'scale(1.02)'
+                          }}
+                        />
+                        {/* 小锁图标 */}
+                        <div style={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          fontSize: '12px',
+                          filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))'
+                        }}>
+                          🔒
+                        </div>
                       </div>
                     ) : (
-                      <div className="cal-indicator" style={{ background: color }}></div>
+                      <div style={{
+                        background: color,
+                        width: '50px',
+                        height: '50px',
+                        borderRadius: '3px',
+                        flexShrink: 0,
+                        marginBottom: '4px'
+                      }}></div>
                     )}
+
+                    {/* 3. 标题文字：防止被压缩 */}
+                    <div
+                      className="cal-title"
+                      style={{
+                        fontSize: '8px',
+                        fontWeight: 600,
+                        color: color,
+                        lineHeight: '1.2',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        width: '100%',
+                        textAlign: 'center',
+                        flexShrink: 0,
+                        padding: '0 2px'
+                      }}
+                    >
+                      {dayData.theme || content.label}
+                    </div>
                   </div>
                 )
               })}
 
               {/* Lock Overlay */}
               <div className="lock-overlay">
-                <button className="lock-btn">
+                <button
+                  className="lock-btn"
+                  onClick={() => trackClick('unlock_click')}
+                >
                   🔒 Unlock Full Calendar
                 </button>
               </div>
@@ -225,30 +379,103 @@ export function MosaicCalendar({
             }}>
               <div style={{ background: 'white', borderRadius: '32px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 {/* Instagram Post Header */}
-                <div style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f4f6' }}>
-                  <span style={{ fontWeight: 'bold', fontSize: '14px' }}>
-                    {profileData?.handle?.replace('@', '') || 'yourbusiness'}
-                  </span>
+                <div style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid #f3f4f6' }}>
+                  {/* 用户头像 */}
+                  {profileData?.avatar_url ? (
+                    <img
+                      src={`/api/image-proxy?url=${encodeURIComponent(profileData.avatar_url)}`}
+                      alt={profileData.full_name || 'Profile'}
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '1px solid #e5e7eb'
+                      }}
+                    />
+                  ) : (
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      background: '#e5e7eb',
+                      display: 'grid',
+                      placeItems: 'center',
+                      fontSize: '14px',
+                      fontWeight: 'bold'
+                    }}>
+                      {(profileData?.full_name || 'U').charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  {/* 用户名 */}
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontWeight: 'bold', fontSize: '14px', lineHeight: '1.2' }}>
+                      {profileData?.handle?.replace('@', '') || 'yourbusiness'}
+                    </p>
+                  </div>
                   <span style={{ fontSize: '20px' }}>...</span>
                 </div>
 
-                {/* Image Placeholder */}
-                <div style={{ height: '320px', background: '#f3f4f6', display: 'grid', placeItems: 'center' }}>
-                  <div style={{ textAlign: 'center' }}>
-                    <span style={{ fontSize: '52px' }}>📸</span>
-                    <div style={{
-                      fontSize: '12px',
-                      background: 'white',
-                      padding: '7px 14px',
-                      borderRadius: '14px',
-                      color: '#ec4899',
-                      boxShadow: '0 3px 10px rgba(0,0,0,0.12)',
-                      marginTop: '14px',
-                      fontWeight: 600
-                    }}>
-                      ✨ AI Generated
+                {/* Image Placeholder - Pexels图片预览 */}
+                <div style={{ height: '320px', background: '#f3f4f6', position: 'relative', overflow: 'hidden' }}>
+                  {pexelsImages.length > 0 ? (
+                    <>
+                      {/* Pexels图片（模糊） */}
+                      <img
+                        src={pexelsImages[0]}
+                        alt="Content preview"
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          filter: 'blur(3px)',
+                          transform: 'scale(1.05)' // 轻微放大避免模糊边缘
+                        }}
+                      />
+                      {/* 锁定遮罩 */}
+                      <div style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        display: 'grid',
+                        placeItems: 'center',
+                        background: 'rgba(255, 255, 255, 0.3)'
+                      }}>
+                        <div style={{
+                          background: 'white',
+                          padding: '20px 30px',
+                          borderRadius: '20px',
+                          boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+                          textAlign: 'center'
+                        }}>
+                          <div style={{ fontSize: '40px', marginBottom: '8px' }}>🔒</div>
+                          <div style={{ fontSize: '13px', fontWeight: 700, color: '#111' }}>
+                            Unlock to View
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ display: 'grid', placeItems: 'center', height: '100%' }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <span style={{ fontSize: '52px' }}>📸</span>
+                        <div style={{
+                          fontSize: '12px',
+                          background: 'white',
+                          padding: '7px 14px',
+                          borderRadius: '14px',
+                          color: '#ec4899',
+                          boxShadow: '0 3px 10px rgba(0,0,0,0.12)',
+                          marginTop: '14px',
+                          fontWeight: 600
+                        }}>
+                          ✨ AI Generated
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Instagram Action Icons */}
@@ -288,6 +515,24 @@ export function MosaicCalendar({
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* VIP Service Button - 放在手机预览下方 */}
+          <div className="text-center mt-6">
+            <a
+              href="mailto:pocketaigc@gmail.com?subject=Instagram Account Management Service Inquiry"
+              onClick={() => trackClick('vip_service_click')}
+              className="inline-block text-sm text-gray-600 hover:text-gray-900 transition-colors"
+              style={{
+                padding: '10px 20px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                textDecoration: 'none',
+                background: 'white'
+              }}
+            >
+              Too busy to DIY? Let us manage it for you.
+            </a>
           </div>
         </div>
       </div>

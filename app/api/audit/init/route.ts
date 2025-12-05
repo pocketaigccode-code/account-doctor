@@ -13,6 +13,7 @@ import { randomUUID } from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getCachedOrFetch, getExpiresAt } from '@/lib/cache/apify-cache'
 import type { InstagramScanData } from '@/lib/scrapers/instagram'
+import { generateIndustryKeywordsWithAI } from '@/lib/pexels-helper'
 
 /**
  * 从Apify原始数据生成即时可用的数据 (Fast Lane)
@@ -132,6 +133,32 @@ export async function POST(request: NextRequest) {
     console.log(`[Instant Data] Generated in ${Date.now() - startTime}ms`)
 
     // ================================================
+    // Step 2.5: 🤖 AI行业识别（生成Pexels关键词）
+    // ================================================
+    let pexelsQuery = 'business professional modern' // 默认值
+
+    try {
+      const aiResult = await generateIndustryKeywordsWithAI({
+        biography: scanData.profile?.biography,
+        latestPosts: scanData.posts?.slice(0, 5).map((post: any) => ({
+          caption: post.caption,
+          hashtags: post.hashtags
+        }))
+      })
+
+      if (aiResult && aiResult.length > 0) {
+        pexelsQuery = aiResult
+        console.log(`[AI Industry] ✅ Pexels关键词: "${pexelsQuery}"`)
+      } else {
+        console.warn('[AI Industry] ⚠️ AI返回空值，使用默认关键词')
+      }
+    } catch (error) {
+      console.error('[AI Industry] ❌ 识别失败:', error)
+      console.log('[AI Industry] 使用默认关键词: "business professional modern"')
+      // 继续执行，不要中断整个流程
+    }
+
+    // ================================================
     // Step 3: 保存初始数据到数据库
     // ================================================
     if (!cacheHit) {
@@ -143,8 +170,12 @@ export async function POST(request: NextRequest) {
           id: auditId,
           username: cleanUsername,
           apify_raw_data: scanData,
-          profile_snapshot: instantData,  // 先保存即时数据
-          status: 'snapshot_ready',  // ✅ 改为 snapshot_ready (Fast Lane完成)
+          profile_snapshot: {
+            ...instantData,
+            pexels_query: pexelsQuery  // ✅ 向后兼容：也存储在JSONB中
+          },
+          pexels_query: pexelsQuery,  // ✅ 存储在新列中（migration已执行）
+          status: 'snapshot_ready',
           expires_at: getExpiresAt().toISOString()
         })
 

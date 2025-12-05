@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { BrandPersonaCard } from './BrandPersonaCard'
 import { InstagramProfileMockup } from '../mockup/InstagramProfileMockup'
+import { AILoadingAnimation } from '../loading/AILoadingAnimation'
 
 const CHART_COLORS = [
   '#8DA399', '#d97757', '#3B82F6', '#F59E0B', '#8B5CF6',
@@ -100,9 +101,10 @@ interface StrategySectionProps {
   onDay1Loaded?: (day1: any) => void
   onCalendarLoaded?: (calendar: any) => void
   onProgressUpdate?: (progress: number) => void
+  onPersonaLoaded?: (persona: any) => void  // 新增：Persona加载完成回调
 }
 
-export function StrategySection({ auditId, profileData, diagnosisData, onDataLoaded, onDay1Loaded, onCalendarLoaded, onProgressUpdate }: StrategySectionProps) {
+export function StrategySection({ auditId, profileData, diagnosisData, onDataLoaded, onDay1Loaded, onCalendarLoaded, onProgressUpdate, onPersonaLoaded }: StrategySectionProps) {
   // 每个模块独立状态
   const [persona, setPersona] = useState<any>(null)
   const [contentMix, setContentMix] = useState<any>(null)
@@ -134,6 +136,8 @@ export function StrategySection({ auditId, profileData, diagnosisData, onDataLoa
           console.log('[Strategy] ✅ Brand Persona loaded')
           setPersona(data.brand_persona)
           if (onProgressUpdate) onProgressUpdate(20)
+          // 立即通知父组件Persona已加载
+          if (onPersonaLoaded) onPersonaLoaded(data.brand_persona)
         } else {
           throw new Error(data.message || 'Failed to load persona')
         }
@@ -264,7 +268,27 @@ export function StrategySection({ auditId, profileData, diagnosisData, onDataLoa
 
   // 加载状态 - 初始连接中
   if (!persona && loadingPersona) {
-    return <AIThinkingAnimation message="Generating brand persona..." />
+    return (
+      <div style={{
+        background: 'white',
+        borderRadius: 'var(--radius-lg)',
+        boxShadow: 'var(--shadow-float)',
+        padding: '40px',
+        border: '1px solid #f1f5f9'
+      }}>
+        <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">Your New Brand Persona</h2>
+        <AILoadingAnimation
+          steps={[
+            { title: 'Analyzing Brand', detail: 'Understanding your unique identity...', progress: 30 },
+            { title: 'Creating Persona', detail: 'Crafting your brand archetype...', progress: 70 },
+            { title: 'Optimizing Bio', detail: 'Generating SEO-friendly bio...', progress: 100 }
+          ]}
+          icon="✨"
+          autoPlay={true}
+          stepInterval={8333}
+        />
+      </div>
+    )
   }
 
   // 渲染策略内容 (渐进式显示)
@@ -305,8 +329,16 @@ export function StrategySection({ auditId, profileData, diagnosisData, onDataLoa
               <div className="persona-right">
                 <div className="phone-flat">
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', borderBottom: '1px solid #f3f4f6', paddingBottom: '15px' }}>
-                    <div style={{ width: '50px', height: '50px', background: '#eee', borderRadius: '50%', fontWeight: 'bold', display: 'grid', placeItems: 'center' }}>
-                      {profileData.full_name?.charAt(0).toUpperCase() || 'A'}
+                    <div style={{ width: '50px', height: '50px', background: '#eee', borderRadius: '50%', fontWeight: 'bold', display: 'grid', placeItems: 'center', overflow: 'hidden' }}>
+                      {profileData.avatar_url ? (
+                        <img
+                          src={`/api/image-proxy?url=${encodeURIComponent(profileData.avatar_url)}`}
+                          alt={profileData.full_name || 'Profile'}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <span>{profileData.full_name?.charAt(0).toUpperCase() || 'A'}</span>
+                      )}
                     </div>
                     <div style={{ textAlign: 'center', fontSize: '12px' }}>
                       <b>{profileData.post_count || 0}</b><br />Posts
@@ -334,67 +366,24 @@ export function StrategySection({ auditId, profileData, diagnosisData, onDataLoa
           </div>
         </div>
       ) : (
-        <SkeletonCardLarge title="Your New Brand Persona" message="Generating brand persona..." />
+        <div style={{
+          background: 'white',
+          borderRadius: 'var(--radius-lg)',
+          boxShadow: 'var(--shadow-float)',
+          padding: '40px',
+          border: '1px solid #f1f5f9'
+        }}>
+          <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">Your New Brand Persona</h2>
+          <AILoadingAnimation
+            title="Generating brand persona..."
+            subtitle="This usually takes 15-30 seconds"
+            icon="✨"
+          />
+        </div>
       )}
 
       {/* Content Mix已整合到日历中，不再单独显示 */}
 
-    </div>
-  )
-}
-
-/**
- * 大号骨架屏 - 双层转圈动画
- */
-function SkeletonCardLarge({ title, message }: { title: string; message: string }) {
-  return (
-    <div className="bg-white border border-sand-200 p-10 shadow-sm">
-      <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">{title}</h2>
-
-      {/* 双层转圈动画 */}
-      <div className="flex flex-col items-center justify-center py-16">
-        <div className="relative w-56 h-56">
-          <div className="absolute inset-0 border-[14px] border-sand-200 rounded-full"></div>
-          <div className="absolute inset-0 border-[14px] border-transparent border-t-[#6fa88e] rounded-full animate-spin"></div>
-          <div className="absolute inset-6 border-[12px] border-sand-100 rounded-full"></div>
-          <div className="absolute inset-6 border-[12px] border-transparent border-t-[#e06744] rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '2s' }}></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-4 h-4 bg-charcoal-900 rounded-full mb-2 mx-auto animate-bounce"></div>
-              <p className="font-sans text-xs text-charcoal-600 font-semibold">AI Analyzing</p>
-            </div>
-          </div>
-        </div>
-        <p className="font-serif text-lg font-bold text-charcoal-900 mt-8">{message}</p>
-      </div>
-    </div>
-  )
-}
-
-/**
- * 骨架屏卡片组件 - 双层转圈动画
- */
-function SkeletonCard({ title }: { title: string }) {
-  return (
-    <div className="bg-white border border-sand-200 p-10 shadow-sm">
-      <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-6">
-        {title}
-      </h2>
-      <div className="flex items-center justify-center h-48">
-        {/* 双层转圈动画 */}
-        <div className="relative w-20 h-20">
-          {/* 外圈 - 顺时针慢速 */}
-          <div
-            className="absolute inset-0 border-4 border-sand-200 rounded-full border-t-sage"
-            style={{ animation: 'spin 2s linear infinite' }}
-          ></div>
-          {/* 内圈 - 逆时针快速 */}
-          <div
-            className="absolute inset-2 border-4 border-sand-200 rounded-full border-b-charcoal-900"
-            style={{ animation: 'spin 1s linear infinite reverse' }}
-          ></div>
-        </div>
-      </div>
     </div>
   )
 }
@@ -451,38 +440,6 @@ function ContentMixSidewalkChart({ data }: { data: Array<{ label: string; percen
             </div>
           )
         })}
-      </div>
-    </div>
-  )
-}
-
-/**
- * AI思考动画组件 - 简化版
- */
-function AIThinkingAnimation({ message }: { message: string }) {
-  return (
-    <div className="bg-white border border-sand-200 p-10 shadow-sm">
-      <div className="text-center max-w-md mx-auto">
-        {/* 动画圆环 */}
-        <div className="relative w-28 h-28 mx-auto mb-6">
-          <div className="absolute inset-0 border-4 border-sand-200 rounded-full"></div>
-          <div
-            className="absolute inset-0 border-4 border-charcoal-900 rounded-full border-t-transparent animate-spin"
-            style={{ animationDuration: '1.5s' }}
-          ></div>
-        </div>
-
-        {/* 状态文字 */}
-        <h3 className="font-serif text-2xl font-bold text-charcoal-900 mb-2">
-          AI is crafting your strategy...
-        </h3>
-        <p className="font-sans text-sm text-charcoal-600 mb-4">
-          {message}
-        </p>
-
-        <p className="font-sans text-xs text-charcoal-600">
-          This usually takes 15-30 seconds
-        </p>
       </div>
     </div>
   )

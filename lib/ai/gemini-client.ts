@@ -120,15 +120,24 @@ export function parseJSON(aiResponse: string, moduleName: string = ''): any {
 
     try {
       let fixedJson = jsonStr
-        // 修复尾随逗号
+        // 1. 修复尾随逗号（最常见的错误）
         .replace(/,(\s*[}\]])/g, '$1')
-        // 修复单引号为双引号
+        // 2. 修复对象/数组末尾的多余逗号
+        .replace(/,\s*,/g, ',')
+        // 3. 修复单引号为双引号
         .replace(/'/g, '"')
-        // 修复未转义的换行符
+        // 4. 修复未转义的换行符和回车符
         .replace(/\n/g, '\\n')
         .replace(/\r/g, '')
-        // 修复未闭合的字符串(尝试在最后添加")
+        .replace(/\t/g, '\\t')
+        // 5. 移除属性值中的控制字符
+        .replace(/[\x00-\x1F\x7F]/g, '')
+        // 6. 修复缺失的逗号（在}或]后面应该有逗号，如果下一个字符是"或{或[）
+        .replace(/([}\]])\s*(?=["{\[])/g, '$1,')
+        // 7. 修复未闭合的字符串
         .replace(/"([^"]*?)$/g, '"$1"')
+        // 8. 移除多余的空白
+        .replace(/\s+/g, ' ')
 
       const fixed = JSON.parse(fixedJson)
       console.log(`[parseJSON ${moduleName}] ✅ 自动修复成功!`)

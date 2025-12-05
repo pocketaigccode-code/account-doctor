@@ -91,7 +91,7 @@ export async function GET(
 
         if (error || !audit) {
           clearInterval(heartbeat)
-          sendEvent('error', { error: 'AUDIT_NOT_FOUND', message: '诊断记录不存在' })
+          sendEvent('error', { error: 'AUDIT_NOT_FOUND', message: 'Audit record not found' })
           controller.close()
           return
         }

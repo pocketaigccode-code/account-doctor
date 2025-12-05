@@ -77,13 +77,23 @@ export async function POST(
 
     console.log('[Day1 API] ✅ AI generation completed')
 
+    // 直接从audit记录读取Pexels关键词（优先从列读取，降级到JSONB）
+    const pexelsQuery = audit.pexels_query || audit.profile_snapshot?.pexels_query || 'business professional modern'
+    console.log(`[Day1 API] 📸 使用Pexels关键词: "${pexelsQuery}"`)
+
+    // 将pexels_query添加到day1Data
+    const enrichedDay1Data = {
+      ...day1Data,
+      pexels_query: pexelsQuery
+    }
+
     // 5. 保存到数据库 - 注意保存到execution_calendar字段
     const { error: updateError } = await supabaseAdmin
       .from('audits')
       .update({
         execution_calendar: {
           ...audit.execution_calendar,
-          day_1_detail: day1Data
+          day_1_detail: enrichedDay1Data
         }
       })
       .eq('id', auditId)
@@ -99,7 +109,7 @@ export async function POST(
 
     return Response.json({
       success: true,
-      day_1_detail: day1Data,
+      day_1_detail: enrichedDay1Data,
       cached: false,
       generation_time_ms: duration
     })

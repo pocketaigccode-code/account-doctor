@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
+import { SimpleLoadingSpinner } from '../loading/AILoadingAnimation'
 
 interface ExecutionCalendarProps {
   calendar: {
@@ -258,48 +259,9 @@ export function ExecutionCalendar({ calendar }: ExecutionCalendarProps) {
  */
 function MonthPlanLoadingAnimation() {
   return (
-    <div className="relative w-32 h-32 mx-auto">
-      {/* 外圈 - 黑色,慢速 */}
-      <svg className="absolute inset-0 w-full h-full animate-spin" style={{ animationDuration: '2s' }}>
-        <circle
-          cx="64"
-          cy="64"
-          r="60"
-          stroke="currentColor"
-          strokeWidth="6"
-          fill="none"
-          strokeDasharray="80 300"
-          className="text-charcoal-900"
-        />
-      </svg>
-
-      {/* 中圈 - 珊瑚色,中速 */}
-      <svg className="absolute inset-3 w-[calc(100%-24px)] h-[calc(100%-24px)] animate-spin" style={{ animationDuration: '1.5s' }}>
-        <circle
-          cx="52"
-          cy="52"
-          r="48"
-          stroke="currentColor"
-          strokeWidth="5"
-          fill="none"
-          strokeDasharray="70 250"
-          className="text-coral"
-        />
-      </svg>
-
-      {/* 内圈 - 绿色,快速 */}
-      <svg className="absolute inset-6 w-[calc(100%-48px)] h-[calc(100%-48px)] animate-spin" style={{ animationDuration: '1s' }}>
-        <circle
-          cx="40"
-          cy="40"
-          r="36"
-          stroke="currentColor"
-          strokeWidth="4"
-          fill="none"
-          strokeDasharray="60 200"
-          className="text-sage"
-        />
-      </svg>
-    </div>
+    <SimpleLoadingSpinner
+      icon="📅"
+      text="Generating monthly content plan..."
+    />
   )
 }

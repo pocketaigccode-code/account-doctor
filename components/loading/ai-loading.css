@@ -1,0 +1,239 @@
+/* AI Loading Animation Styles */
+
+:root {
+  /* 品牌渐变色 */
+  --gradient-brand: linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #FCB045 100%);
+  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* --- 加载遮罩层 --- */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+/* --- 容器 --- */
+.ai-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  border: none;
+  outline: none;
+}
+
+.ai-loading-fullscreen {
+  min-height: 100vh;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  border: none;
+}
+
+.ai-loading-simple {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  text-align: center;
+  border: none;
+  outline: none;
+}
+
+/* --- 1. 核心：AI 扫描环 --- */
+.scanner-container {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin-bottom: 40px;
+  border: none;
+  outline: none;
+}
+
+.scanner-container-small {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 16px;
+}
+
+/* 外层：旋转的渐变光环 */
+.scanner-ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: none;
+  background: conic-gradient(#833AB4, #FD1D1D, #FCB045, #833AB4);
+  animation: spin 1.5s linear infinite;
+  /* 这是做一个空心圆环的关键技巧 */
+  -webkit-mask: radial-gradient(transparent 60%, black 62%, black 100%);
+  mask: radial-gradient(transparent 60%, black 62%, black 100%);
+}
+
+/* 内层：脉冲光晕 */
+.scanner-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 70%;
+  height: 70%;
+  background: var(--gradient-brand);
+  border-radius: 50%;
+  border: none;
+  opacity: 0.2;
+  animation: pulse 2s ease-in-out infinite;
+  filter: blur(10px);
+}
+
+/* 中心：图标或 Logo */
+.scanner-icon {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  right: 5px;
+  bottom: 5px;
+  background: white;
+  border-radius: 50%;
+  border: none;
+  outline: none;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  font-size: 40px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.scanner-container-small .scanner-icon {
+  font-size: 24px;
+}
+
+/* --- 2. 进度条 --- */
+.progress-container {
+  width: 300px;
+  max-width: 90vw;
+  height: 6px;
+  background: #f3f4f6;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--gradient-brand);
+  border-radius: 10px;
+  transition: width 0.3s ease-out;
+  box-shadow: 0 0 10px rgba(236, 72, 153, 0.4);
+}
+
+/* --- 3. 动态文字 --- */
+.loading-text-wrap {
+  text-align: center;
+  min-height: 60px;
+  max-width: 400px;
+}
+
+.main-status {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 5px;
+  font-family: var(--font-main);
+}
+
+.sub-status {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+  font-family: var(--font-main);
+}
+
+.loading-text-simple {
+  font-family: var(--font-main);
+  font-size: 14px;
+  color: #6b7280;
+  margin-top: 8px;
+}
+
+/* --- 动画关键帧 --- */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.95);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0.95);
+    opacity: 0.3;
+  }
+}
+
+/* 简单的淡入淡出动画类 */
+.fade-in {
+  animation: fadeIn 0.5s;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 响应式调整 */
+@media (max-width: 640px) {
+  .scanner-container {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 30px;
+  }
+
+  .scanner-icon {
+    font-size: 32px;
+  }
+
+  .progress-container {
+    width: 250px;
+  }
+
+  .main-status {
+    font-size: 16px;
+  }
+
+  .sub-status {
+    font-size: 13px;
+  }
+}

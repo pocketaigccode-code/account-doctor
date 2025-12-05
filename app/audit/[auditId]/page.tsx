@@ -10,6 +10,7 @@ import { use, useEffect, useState } from 'react'
 import { ProfileSnapshot } from '@/components/result/ProfileSnapshot'
 import { StrategySection } from '@/components/result/StrategySection'
 import { UnifiedStrategyDashboard } from '@/components/result/UnifiedStrategyDashboard'
+import { PageLoadingAnimation, AILoadingAnimation } from '@/components/loading/AILoadingAnimation'
 
 
 
@@ -24,6 +25,7 @@ export default function AuditResultPage({ params }: PageProps) {
   const [instantData, setInstantData] = useState<any>(null)
   const [diagnosisData, setDiagnosisData] = useState<any>(null)
   const [strategyData, setStrategyData] = useState<any>(null)  // 策略数据(Persona+Mix+Audience)
+  const [personaData, setPersonaData] = useState<any>(null)  // Persona数据（用于立即显示下一步加载）
   const [day1Data, setDay1Data] = useState<any>(null)  // Day1内容
   const [calendarData, setCalendarData] = useState<any>(null)  // 30天日历
   const [strategyProgress, setStrategyProgress] = useState(0)  // Strategy进度
@@ -111,12 +113,10 @@ export default function AuditResultPage({ params }: PageProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-sand-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-3 border-sand-200 border-t-charcoal-900 rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="font-sans text-sm text-charcoal-600">Loading...</p>
-        </div>
-      </div>
+      <PageLoadingAnimation
+        title="Loading Account Data..."
+        subtitle="Retrieving your Instagram profile information"
+      />
     )
   }
 
@@ -185,15 +185,18 @@ export default function AuditResultPage({ params }: PageProps) {
             onDay1Loaded={setDay1Data}
             onCalendarLoaded={setCalendarData}
             onProgressUpdate={setStrategyProgress}
+            onPersonaLoaded={setPersonaData}
           />
         )}
 
         {/* Day 1内容已整合到日历中，不再单独显示 */}
 
         {/* 统一策略仪表板 - 整合Content Mix + Instant Content Fix + 30天日历 */}
-        {diagnosisData && day1Data && calendarData && (
+        {/* 只要Persona加载完成就立即显示 */}
+        {diagnosisData && personaData && (
           <>
-            {strategyData?.strategy_section?.content_mix_chart ? (
+            {/* 所有数据加载完成，显示完整仪表板 */}
+            {day1Data && calendarData && strategyData?.strategy_section?.content_mix_chart ? (
               <UnifiedStrategyDashboard
                 contentMix={strategyData.strategy_section.content_mix_chart}
                 brandPersona={strategyData.strategy_section.brand_persona}
@@ -202,11 +205,27 @@ export default function AuditResultPage({ params }: PageProps) {
                 auditId={auditId}
               />
             ) : (
-              <div className="bg-white border border-sand-200 p-10 shadow-card">
+              /* 数据加载中，显示加载动画 */
+              <div style={{
+                background: 'white',
+                borderRadius: 'var(--radius-lg)',
+                boxShadow: 'var(--shadow-float)',
+                padding: '40px',
+                border: '1px solid #f1f5f9'
+              }}>
                 <h2 className="section-title">30-Day Content Calendar</h2>
-                <div className="text-center py-12">
-                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-sage border-t-transparent"></div>
-                  <p className="mt-4 font-sans text-sm text-charcoal-600">Loading strategy dashboard...</p>
+                <div className="py-8">
+                  <AILoadingAnimation
+                    steps={[
+                      { title: 'Loading Strategy', detail: 'Preparing your content mix...', progress: 20 },
+                      { title: 'Creating Day 1 Post', detail: 'Generating viral content...', progress: 50 },
+                      { title: 'Planning Calendar', detail: 'Building 30-day roadmap...', progress: 80 },
+                      { title: 'Finalizing', detail: 'Almost ready...', progress: 95 }
+                    ]}
+                    icon="📅"
+                    autoPlay={true}
+                    stepInterval={6250}
+                  />
                 </div>
               </div>
             )}
@@ -335,32 +354,27 @@ function Day1Preview({ day1, profileData }: { day1: any, profileData?: any }) {
  */
 function Day1Skeleton() {
   return (
-    <div className="bg-white border border-sand-200 p-10 shadow-sm">
-      <div className="h-8 bg-sand-200 w-1/3 mb-8 animate-pulse"></div>
+    <div style={{
+      background: 'white',
+      borderRadius: 'var(--radius-lg)',
+      boxShadow: 'var(--shadow-float)',
+      padding: '40px',
+      border: '1px solid #f1f5f9'
+    }}>
+      <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-8">Instant Content Fix</h2>
 
-      {/* 双层转圈动画 */}
-      <div className="flex flex-col items-center justify-center py-16">
-        <div className="relative w-40 h-40">
-          <div className="absolute inset-0 border-[14px] border-sand-200 rounded-full"></div>
-          <div className="absolute inset-0 border-[14px] border-transparent border-t-[#6fa88e] rounded-full animate-spin"></div>
-          <div className="absolute inset-5 border-[12px] border-sand-100 rounded-full"></div>
-          <div className="absolute inset-5 border-[12px] border-transparent border-t-[#e06744] rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '2s' }}></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-3 h-3 bg-charcoal-900 rounded-full animate-bounce"></div>
-          </div>
-        </div>
-        <p className="font-serif text-xl font-bold text-charcoal-900 mt-8 mb-2">Creating Day 1 Viral Content</p>
-        <p className="font-sans text-sm text-charcoal-600">AI is crafting exquisite copy and hashtags for you...</p>
-      </div>
-
-      {/* 骨架网格 */}
-      <div className="grid md:grid-cols-2 gap-10 mt-8 opacity-20 animate-pulse">
-        <div className="aspect-square bg-sand-200"></div>
-        <div className="space-y-4">
-          <div className="h-6 bg-sand-200 w-full"></div>
-          <div className="h-4 bg-sand-200 w-3/4"></div>
-          <div className="h-4 bg-sand-200 w-full"></div>
-        </div>
+      <div className="py-8">
+        <AILoadingAnimation
+          steps={[
+            { title: 'Analyzing Your Style', detail: 'Understanding your brand voice...', progress: 25 },
+            { title: 'Generating Caption', detail: 'Creating engaging post copy...', progress: 50 },
+            { title: 'Selecting Hashtags', detail: 'Finding optimal hashtags...', progress: 75 },
+            { title: 'Finalizing Content', detail: 'Preparing your Day 1 post...', progress: 100 }
+          ]}
+          icon="✨"
+          autoPlay={true}
+          stepInterval={6250}
+        />
       </div>
     </div>
   )
@@ -371,35 +385,27 @@ function Day1Skeleton() {
  */
 function CalendarSkeleton() {
   return (
-    <div className="bg-white border border-sand-200 p-10 shadow-sm">
-      <div className="h-8 bg-sand-200 w-1/3 mb-8 animate-pulse"></div>
+    <div style={{
+      background: 'white',
+      borderRadius: 'var(--radius-lg)',
+      boxShadow: 'var(--shadow-float)',
+      padding: '40px',
+      border: '1px solid #f1f5f9'
+    }}>
+      <h2 className="font-serif text-3xl font-bold text-charcoal-900 mb-8">30-Day Content Calendar</h2>
 
-      {/* 双层转圈动画 */}
-      <div className="flex flex-col items-center justify-center py-16">
-        <div className="relative w-40 h-40">
-          {/* 外圈 (更粗更明显) */}
-          <div className="absolute inset-0 border-[14px] border-sand-200 rounded-full"></div>
-          <div className="absolute inset-0 border-[14px] border-transparent border-t-[#6fa88e] rounded-full animate-spin"></div>
-          {/* 内圈 (更粗更明显) */}
-          <div className="absolute inset-5 border-[12px] border-sand-100 rounded-full"></div>
-          <div className="absolute inset-5 border-[12px] border-transparent border-t-[#e06744] rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '2s' }}></div>
-          {/* 中心 */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-3 h-3 bg-charcoal-900 rounded-full animate-bounce"></div>
-          </div>
-        </div>
-        <p className="font-serif text-xl font-bold text-charcoal-900 mt-8 mb-2">Generating 30-Day Content Calendar</p>
-        <p className="font-sans text-sm text-charcoal-600">AI is planning a complete monthly content strategy for you...</p>
-      </div>
-
-      {/* 日历骨架网格 */}
-      <div className="grid grid-cols-7 gap-4 mt-8 opacity-30 animate-pulse">
-        {Array.from({ length: 7 }).map((_, i) => (
-          <div key={i} className="border border-sand-200 p-3 bg-sand-50">
-            <div className="h-3 bg-sand-200 w-12 mb-2"></div>
-            <div className="aspect-square bg-sand-200"></div>
-          </div>
-        ))}
+      <div className="py-8">
+        <AILoadingAnimation
+          steps={[
+            { title: 'Planning Strategy', detail: 'Creating content themes...', progress: 20 },
+            { title: 'Scheduling Posts', detail: 'Optimizing posting times...', progress: 40 },
+            { title: 'Generating Captions', detail: 'Writing 30 unique captions...', progress: 60 },
+            { title: 'Finalizing Calendar', detail: 'Preparing your monthly plan...', progress: 90 }
+          ]}
+          icon="📅"
+          autoPlay={true}
+          stepInterval={6250}
+        />
       </div>
     </div>
   )
@@ -410,53 +416,33 @@ function CalendarSkeleton() {
  */
 function DiagnosisCardSkeleton() {
   return (
-    <div className="bg-white border border-sand-200 p-10 mb-8 shadow-sm">
+    <div style={{
+      background: 'white',
+      borderRadius: 'var(--radius-lg)',
+      boxShadow: 'var(--shadow-float)',
+      padding: '40px',
+      marginBottom: '32px',
+      border: '1px solid #f1f5f9'
+    }}>
       <h2 className="font-serif text-3xl font-bold mb-2">
         <span className="text-gradient-brand">Missed Traffic Check</span>
       </h2>
       <p className="font-sans text-sm text-charcoal-600 mb-8">See exactly where you are losing potential customers in your bio and posts.</p>
 
-      {/* 中心双层转圈动画 */}
-      <div className="flex flex-col items-center justify-center py-16">
-        <div className="relative w-48 h-48">
-          {/* 外圈 */}
-          <div className="absolute inset-0 border-[14px] border-sand-200 rounded-full"></div>
-          <div className="absolute inset-0 border-[14px] border-transparent border-t-[#6fa88e] rounded-full animate-spin"></div>
-          {/* 内圈 */}
-          <div className="absolute inset-6 border-[12px] border-sand-100 rounded-full"></div>
-          <div className="absolute inset-6 border-[12px] border-transparent border-t-[#e06744] rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '2s' }}></div>
-          {/* 中心 */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-4 h-4 bg-charcoal-900 rounded-full mb-2 mx-auto animate-bounce"></div>
-              <p className="font-sans text-xs text-charcoal-600 font-semibold">AI Analyzing</p>
-            </div>
-          </div>
-        </div>
-        <p className="font-serif text-xl font-bold text-charcoal-900 mt-8 mb-2">Generating diagnosis score</p>
-        <p className="font-sans text-sm text-charcoal-600">AI is analyzing 5 key dimensions of your account...</p>
-      </div>
-
-      {/* 骨架内容 */}
-      <div className="flex items-start gap-16 mt-12 opacity-20 animate-pulse">
-        <div className="flex-shrink-0 text-center">
-          <div className="w-44 h-44 rounded-full border-12 border-sand-200 mb-4"></div>
-          <div className="inline-block bg-sand-100 px-4 py-1.5 border border-sand-200">
-            <span className="font-sans text-sm font-semibold text-charcoal-600">Analyzing...</span>
-          </div>
-        </div>
-
-        <div className="flex-1 space-y-3">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="flex gap-3 items-start bg-sand-50 border border-sand-200 p-3">
-              <div className="flex-shrink-0 w-6 h-6 bg-sand-200"></div>
-              <div className="flex-1 space-y-2">
-                <div className="h-4 bg-sand-200 w-full"></div>
-                <div className="h-4 bg-sand-200 w-4/5"></div>
-              </div>
-            </div>
-          ))}
-        </div>
+      {/* AI加载动画 */}
+      <div className="py-8">
+        <AILoadingAnimation
+          steps={[
+            { title: 'Analyzing Profile', detail: 'Examining your bio and profile setup...', progress: 20 },
+            { title: 'Scanning Content', detail: 'Reviewing recent posts and engagement...', progress: 40 },
+            { title: 'Visual Analysis', detail: 'Checking color palette and consistency...', progress: 60 },
+            { title: 'Competitor Research', detail: 'Comparing with local businesses...', progress: 80 },
+            { title: 'Calculating Score', detail: 'Generating your health score...', progress: 95 }
+          ]}
+          icon="🔍"
+          autoPlay={true}
+          stepInterval={5000}
+        />
       </div>
     </div>
   )
@@ -533,21 +519,21 @@ function DiagnosisCard({ data }: { data: any }) {
           // 根据位置分配不同图标和颜色
           const cardStyles = [
             { icon: '⚡️', bgColor: '#fee2e2', iconColor: '#ef4444', statusText: 'Fix: Add clear CTA', statusColor: '#ef4444' },
-            { icon: '🎨', bgColor: '#fffbeb', iconColor: '#f59e0b', statusText: 'Fix: Improve consistency', statusColor: '#f59e0b' },
-            { icon: '🔍', bgColor: '#d1fae5', iconColor: '#10b981', statusText: 'Status: Optimized', statusColor: '#10b981' },
+            { icon: '🎨', bgColor: '#fee2e2', iconColor: '#ef4444', statusText: 'Fix: Improve consistency', statusColor: '#ef4444' },
+            { icon: '🔍', bgColor: '#fee2e2', iconColor: '#ef4444', statusText: 'Fix: Add booking link', statusColor: '#ef4444' },
           ]
           const style = cardStyles[index] || cardStyles[0]
+
+          // 去除开头的分类标签（如 "SEO & Discoverability:", "Visual Appeal:", "Conversion Path:"）
+          const cleanIssue = issue.replace(/^[^:]+:\s*/, '')
 
           return (
             <div key={index} className="audit-card">
               <div className="icon-box" style={{ background: style.bgColor, color: style.iconColor }}>
                 {style.icon}
               </div>
-              <h3 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '10px' }}>
-                Issue #{index + 1}
-              </h3>
               <p style={{ color: 'var(--text-muted)', marginTop: '10px', fontSize: '14px', lineHeight: '1.6' }}>
-                {issue}
+                {cleanIssue}
               </p>
               <div style={{ color: style.statusColor, fontWeight: 700, marginTop: '10px', fontSize: '14px' }}>
                 {style.statusText}

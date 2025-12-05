@@ -671,30 +671,44 @@ input:focus, textarea:focus, select:focus {
 
 .cal-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, 70px);
+  grid-auto-rows: 82px;
   background: #e5e7eb;
   gap: 1px;
   border-radius: 16px;
   overflow: hidden;
   border: 1px solid #e5e7eb;
   position: relative;
+  justify-content: center;
 }
 
 .cal-cell {
   background: white;
-  aspect-ratio: 1;
-  padding: 10px;
-  font-size: 12px;
+  width: 70px;
+  height: 82px;
+  padding: 4px;
+  font-size: 9px;
   color: #9ca3af;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
 }
 
 .cal-indicator {
   height: 4px;
   width: 60%;
   border-radius: 2px;
+}
+
+.cal-title {
+  font-size: 8px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  width: 100% !important;
+  text-align: center !important;
+  flex-shrink: 0 !important;
 }
 
 /* Lock Overlay - 全覆盖 + 强模糊效果 */

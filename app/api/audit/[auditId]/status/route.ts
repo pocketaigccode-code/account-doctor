@@ -24,7 +24,7 @@ export async function GET(
         {
           error: 'AUDIT_NOT_FOUND',
           message: 'Audit record not found',
-          ui_message: '诊断记录不存在'
+          ui_message: 'Audit record not found'
         },
         { status: 404 }
       )

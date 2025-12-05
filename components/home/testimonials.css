@@ -1,0 +1,79 @@
+/* 无限滚动评价轮播 - 高端SaaS风格 */
+
+.testimonial-row-container {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  /* 关键：渐变淡出效果 */
+  -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+
+.testimonial-track {
+  display: flex;
+  gap: 24px;
+  animation: scroll-left 50s linear infinite;
+  width: fit-content;
+}
+
+.testimonial-track-reverse {
+  animation: scroll-right 60s linear infinite; /* 速度稍慢 */
+}
+
+/* Hover暂停 */
+.testimonial-row-container:hover .testimonial-track {
+  animation-play-state: paused;
+}
+
+/* 高端卡片样式 */
+.testimonial-card {
+  min-width: 360px;
+  max-width: 400px;
+  background: white; /* 纯白背景 */
+  padding: 32px; /* 增大padding */
+  border-radius: 24px; /* rounded-3xl */
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1); /* 柔和浮动阴影 */
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  border: none; /* 移除边框 */
+}
+
+.testimonial-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.15); /* hover时阴影增强 */
+}
+
+/* 动画关键帧 */
+@keyframes scroll-left {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes scroll-right {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .testimonial-card {
+    min-width: 280px;
+    max-width: 320px;
+  }
+
+  .testimonial-track {
+    animation-duration: 30s; /* 移动端稍快 */
+  }
+
+  .testimonial-track-reverse {
+    animation-duration: 35s;
+  }
+}

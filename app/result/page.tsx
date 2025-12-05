@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { PageLoadingAnimation } from '@/components/loading/AILoadingAnimation'
 
 interface ReportData {
   id: string
@@ -73,12 +74,10 @@ function ResultPageContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-sand-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-3 border-sand-200 border-t-charcoal-900 rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="font-sans text-sm text-charcoal-600">Loading...</p>
-        </div>
-      </div>
+      <PageLoadingAnimation
+        title="Loading Report..."
+        subtitle="Retrieving your analysis results"
+      />
     )
   }
 
@@ -370,12 +369,10 @@ function ResultPageContent() {
 export default function ResultPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-sand-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-3 border-sand-200 border-t-charcoal-900 rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="font-sans text-sm text-charcoal-600">Loading...</p>
-        </div>
-      </div>
+      <PageLoadingAnimation
+        title="Loading Report..."
+        subtitle="Retrieving your analysis results"
+      />
     }>
       <ResultPageContent />
     </Suspense>
