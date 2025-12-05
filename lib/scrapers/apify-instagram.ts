@@ -12,6 +12,14 @@ export async function scrapeInstagramWithApify(username: string): Promise<Instag
   console.log(`[Apify] 开始爬取账号: ${username} (使用完整版Scraper)`)
 
   try {
+    // 验证API Token
+    if (!process.env.APIFY_API_TOKEN) {
+      console.error('[Apify] ❌ APIFY_API_TOKEN 未配置')
+      throw new Error('APIFY_TOKEN_MISSING')
+    }
+
+    console.log(`[Apify] 调用Instagram Scraper - URL: https://www.instagram.com/${username}/`)
+
     // 调用Apify的Instagram Scraper (完整版)
     const run = await client.actor('apify/instagram-scraper').call({
       directUrls: [`https://www.instagram.com/${username}/`],
@@ -20,10 +28,15 @@ export async function scrapeInstagramWithApify(username: string): Promise<Instag
       onlyPostsNewerThan: '30 days', // 只获取最近30天
     })
 
+    console.log(`[Apify] Actor运行成功 - Run ID: ${run.id}, Dataset ID: ${run.defaultDatasetId}`)
+
     // 等待结果
     const { items } = await client.dataset(run.defaultDatasetId).listItems()
 
+    console.log(`[Apify] 数据集返回 ${items?.length || 0} 条记录`)
+
     if (!items || items.length === 0) {
+      console.error(`[Apify] ❌ 账号 ${username} 未找到或返回空数据`)
       throw new Error('PROFILE_NOT_FOUND')
     }
 
@@ -91,9 +104,50 @@ export async function scrapeInstagramWithApify(username: string): Promise<Instag
       recentPosts,
       scrapedAt: new Date(),
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('[Apify] 爬取失败:', error)
-    throw error
+
+    // 详细的错误分类和用户友好的消息
+    if (error.message === 'PROFILE_NOT_FOUND') {
+      console.error(`[Apify] 账号 ${username} 不存在或已设为私密`)
+      throw error // 直接抛出，保持原始错误类型
+    }
+
+    if (error.message === 'APIFY_TOKEN_MISSING') {
+      console.error('[Apify] API Token未配置，请检查环境变量')
+      throw new Error('服务配置错误，请联系管理员')
+    }
+
+    // Apify API相关错误
+    if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+      console.error('[Apify] API Token无效或已过期')
+      throw new Error('服务认证失败，请联系管理员')
+    }
+
+    if (error.message?.includes('429') || error.message?.includes('rate limit')) {
+      console.error('[Apify] API调用次数超限')
+      throw new Error('服务繁忙，请稍后再试')
+    }
+
+    if (error.message?.includes('timeout') || error.message?.includes('ETIMEDOUT')) {
+      console.error('[Apify] 请求超时')
+      throw new Error('网络请求超时，请重试')
+    }
+
+    // 通用网络错误
+    if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+      console.error('[Apify] 网络连接失败')
+      throw new Error('无法连接到服务器，请检查网络')
+    }
+
+    // 其他未知错误
+    console.error('[Apify] 未知错误:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack?.substring(0, 200)
+    })
+
+    throw new Error('Instagram数据获取失败，请稍后重试')
   }
 }
 

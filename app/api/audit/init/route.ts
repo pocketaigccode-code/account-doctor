@@ -212,10 +212,43 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('[Audit Init] Fatal error:', error)
 
+    // 根据不同错误类型返回不同的用户友好消息
+    let errorCode = 'INTERNAL_ERROR'
+    let uiMessage = '系统错误,请稍后重试'
+    let statusCode = 500
+
+    // 特定错误处理
+    if (error.message === 'PROFILE_NOT_FOUND') {
+      errorCode = 'PROFILE_NOT_FOUND'
+      uiMessage = '该Instagram账号不存在或已设为私密'
+      statusCode = 404
+    } else if (error.message?.includes('服务配置错误')) {
+      errorCode = 'SERVICE_CONFIG_ERROR'
+      uiMessage = '服务配置异常，请稍后重试或联系管理员'
+      statusCode = 500
+    } else if (error.message?.includes('服务认证失败')) {
+      errorCode = 'AUTH_ERROR'
+      uiMessage = '服务认证失败，请稍后重试'
+      statusCode = 500
+    } else if (error.message?.includes('服务繁忙')) {
+      errorCode = 'RATE_LIMIT'
+      uiMessage = '当前访问量过大，请稍后再试'
+      statusCode = 429
+    } else if (error.message?.includes('超时')) {
+      errorCode = 'TIMEOUT'
+      uiMessage = '请求超时，请检查网络后重试'
+      statusCode = 504
+    } else if (error.message?.includes('无法连接')) {
+      errorCode = 'NETWORK_ERROR'
+      uiMessage = '网络连接失败，请检查网络设置'
+      statusCode = 503
+    }
+
     return NextResponse.json({
-      error: 'INTERNAL_ERROR',
+      error: errorCode,
       message: error.message,
-      ui_message: '系统错误,请稍后重试'
-    }, { status: 500 })
+      ui_message: uiMessage,
+      timestamp: new Date().toISOString()
+    }, { status: statusCode })
   }
 }

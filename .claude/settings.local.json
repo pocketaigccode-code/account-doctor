@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.malou.io)",
+      "WebFetch(domain:www.candybar.co)",
+      "WebFetch(domain:thebiz.me)",
+      "WebFetch(domain:blog.kitcast.tv)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
