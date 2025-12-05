@@ -7,6 +7,7 @@
 import { NextRequest } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { generateAnalystPrompt, PROFILE_ANALYST_SYSTEM_PROMPT } from '@/lib/ai/prompts/profile-analyst'
+import { calculateHealthScore } from '@/lib/ai/scoring-engine'
 
 // 🚨 Serverless配置 - 关键!
 export const runtime = 'nodejs'      // 使用Node.js运行时(非Edge)
@@ -127,7 +128,7 @@ export async function GET(
         sendEvent('status', { phase: 'analyzing', progress: 10 })
 
         // ================================================
-        // Step 4: AI生成诊断卡
+        // Step 4: 生成诊断卡
         // ================================================
         const scanData = audit.apify_raw_data
 
@@ -135,27 +136,28 @@ export async function GET(
           throw new Error('Missing apify_raw_data')
         }
 
-        const promptText = generateAnalystPrompt(scanData)
-
         sendEvent('status', { phase: 'generating_diagnosis', progress: 30 })
 
-        // 🔥 关键: SSE连接保持进程存活,AI可以安全执行
-        const aiResponse = await callGemini(
-          promptText,
-          PROFILE_ANALYST_SYSTEM_PROMPT
-        )
+        // 🎯 使用新的评分引擎（从100分开始扣分）
+        console.log('[Diagnosis] 🎯 使用新评分引擎...')
+        const scoringResult = calculateHealthScore(scanData)
 
-        // 解析 JSON
-        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/)
-        if (!jsonMatch) {
-          throw new Error('AI返回格式错误,无法解析JSON')
-        }
+        console.log('[Diagnosis] ✅ 评分完成:', {
+          score: scoringResult.score,
+          grade: scoringResult.grade,
+          deductions: scoringResult.deductions.length
+        })
 
-        const parsed = JSON.parse(jsonMatch[0])
-
-        // 验证必要字段
-        if (!parsed.diagnosis_card || !parsed.diagnosis_card.score) {
-          throw new Error('AI返回数据缺少必要字段')
+        // 构造诊断卡片数据
+        const parsed = {
+          profile_snapshot: audit.profile_snapshot,
+          diagnosis_card: {
+            score: scoringResult.score,
+            grade: scoringResult.grade,
+            summary_title: scoringResult.summary_title,
+            key_issues: scoringResult.key_issues,
+            deductions: scoringResult.deductions // ⭐ 新增：扣分明细
+          }
         }
 
         // 更新进度

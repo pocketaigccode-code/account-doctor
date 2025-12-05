@@ -11,6 +11,7 @@ import { ProfileSnapshot } from '@/components/result/ProfileSnapshot'
 import { StrategySection } from '@/components/result/StrategySection'
 import { UnifiedStrategyDashboard } from '@/components/result/UnifiedStrategyDashboard'
 import { PageLoadingAnimation, AILoadingAnimation } from '@/components/loading/AILoadingAnimation'
+import { DeductionsBreakdown } from '@/components/result/DeductionsBreakdown'
 
 
 
@@ -168,7 +169,23 @@ export default function AuditResultPage({ params }: PageProps) {
 
         {/* 阶段2: AI增强数据 - 渐进式显示 */}
         {diagnosisData ? (
-          <DiagnosisCard data={diagnosisData} />
+          <>
+            <DiagnosisCard data={diagnosisData} />
+
+            {/* 扣分明细展示 */}
+            {diagnosisData.deductions && diagnosisData.deductions.length > 0 && (
+              <div className="section-gap">
+                <h2 className="section-title text-center">Score Breakdown</h2>
+                <p className="section-subtitle text-center mb-8">
+                  See exactly where points were deducted and how to fix them
+                </p>
+                <DeductionsBreakdown
+                  deductions={diagnosisData.deductions}
+                  initialScore={100}
+                />
+              </div>
+            )}
+          </>
         ) : aiFailed ? (
           <DiagnosisCardAIFailed />
         ) : (
