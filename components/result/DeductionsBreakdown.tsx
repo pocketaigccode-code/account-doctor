@@ -53,20 +53,6 @@ export function DeductionsBreakdown({ deductions, initialScore = 100 }: Deductio
 
   return (
     <div className="space-y-6">
-      {/* 分数计算公式 */}
-      <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-6">
-        <div className="flex items-center justify-center gap-4 text-xl font-mono">
-          <span className="text-4xl font-bold text-purple-800">{initialScore}</span>
-          <span className="text-2xl text-purple-600">-</span>
-          <span className="text-4xl font-bold text-red-600">{totalDeduction}</span>
-          <span className="text-2xl text-purple-600">=</span>
-          <span className="text-5xl font-bold text-gradient-instagram">{finalScore}</span>
-        </div>
-        <p className="text-center text-sm text-gray-600 mt-3">
-          Starting Score - Total Deductions = Your Health Score
-        </p>
-      </div>
-
       {/* 按维度展示扣分项 */}
       <div className="space-y-4">
         {Object.entries(groupedByDimension).map(([dimension, items]) => {

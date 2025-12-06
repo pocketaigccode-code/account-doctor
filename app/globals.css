@@ -312,11 +312,9 @@ input:focus, textarea:focus, select:focus {
   left: 0;
   width: 100%;
   height: 100%;
-  background: var(--gradient-primary);
+  /* background will be set by inline style using conic-gradient */
   border-radius: 120px 120px 0 0;
-  transform-origin: bottom center;
   z-index: 1;
-  transition: transform 1s ease-out;
 }
 
 .gauge-center {
@@ -554,10 +552,10 @@ input:focus, textarea:focus, select:focus {
 .tag-item {
   background: white;
   border: 1px solid #e5e7eb;
-  padding: 8px 16px;
+  padding: 10px 20px;
   border-radius: 20px;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 15px;
   color: var(--text-main);
 }
 
@@ -566,7 +564,8 @@ input:focus, textarea:focus, select:focus {
   background: white;
   border: 8px solid #1f2937;
   border-radius: 36px;
-  width: 300px;
+  width: 450px;
+  max-width: 100%;
   padding: 20px;
   box-shadow: var(--shadow-float);
 }
@@ -800,6 +799,19 @@ input:focus, textarea:focus, select:focus {
   .mix-card {
     flex-direction: column;
     text-align: center;
+    padding: 30px 20px;
+  }
+
+  .persona-left,
+  .persona-right {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .phone-flat {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
   }
 
   .cal-grid {

@@ -5,9 +5,13 @@
  */
 
 interface BrandPersonaCardProps {
-  archetype: string
-  tone_voice: string
-  one_liner_bio: string
+  archetype_name?: string
+  archetype?: string // 兼容旧字段
+  tone_voice_description?: string
+  tone_voice?: string // 兼容旧字段
+  tone_keywords?: string[]
+  optimized_bio?: string
+  one_liner_bio?: string // 兼容旧字段
 }
 
 const ARCHETYPE_ICONS: Record<string, string> = {
@@ -44,9 +48,21 @@ function extractToneKeywords(tone_voice: string): string[] {
   return found.slice(0, 3) // Max 3 tags
 }
 
-export function BrandPersonaCard({ archetype, tone_voice, one_liner_bio }: BrandPersonaCardProps) {
-  const icon = ARCHETYPE_ICONS[archetype] || '✨'
-  const tags = extractToneKeywords(tone_voice)
+export function BrandPersonaCard({
+  archetype_name,
+  archetype,
+  tone_voice_description,
+  tone_voice,
+  tone_keywords,
+  optimized_bio,
+  one_liner_bio
+}: BrandPersonaCardProps) {
+  const displayArchetype = archetype_name || archetype || 'Brand Persona'
+  const displayToneVoice = tone_voice_description || tone_voice || ''
+  const displayBio = optimized_bio || one_liner_bio || ''
+
+  const icon = ARCHETYPE_ICONS[displayArchetype] || '✨'
+  const tags = tone_keywords || (displayToneVoice ? extractToneKeywords(displayToneVoice) : [])
 
   return (
     <div className="flex flex-col md:flex-row items-center gap-10 md:gap-16 px-6 md:px-10">
@@ -59,12 +75,12 @@ export function BrandPersonaCard({ archetype, tone_voice, one_liner_bio }: Brand
 
         {/* Archetype Title with Instagram gradient */}
         <h3 className="text-4xl font-extrabold mb-5 tracking-tight">
-          <span className="text-gradient-instagram">{archetype}</span>
+          <span className="text-gradient-instagram">{displayArchetype}</span>
         </h3>
 
         {/* Tone & Voice Description */}
         <p className="text-gray-600 text-lg leading-relaxed mb-8">
-          {tone_voice}
+          {displayToneVoice}
         </p>
 
         {/* Tags - Refined pill design */}

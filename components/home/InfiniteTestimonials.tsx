@@ -178,8 +178,8 @@ export function InfiniteTestimonials() {
   const row2 = testimonials.slice(12, 24)
 
   return (
-    <section className="w-full bg-gray-50 py-12 overflow-hidden">
-      <div className="max-w-6xl mx-auto px-8 mb-10">
+    <section className="w-full bg-gray-50 py-8 overflow-hidden flex-[1] min-h-[30vh]">
+      <div className="max-w-6xl mx-auto px-8 mb-6">
         <div className="text-center">
           <p className="font-sans text-xs text-gray-500 mb-2 uppercase tracking-wider">TESTIMONIALS</p>
           <h2 className="font-serif text-4xl font-bold text-gray-900">What Local Business Owners Say</h2>

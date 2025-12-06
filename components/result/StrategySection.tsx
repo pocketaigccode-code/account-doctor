@@ -63,9 +63,18 @@ interface StrategyData {
   strategy_plan?: any  // 结构化策划案(旧格式)
   strategy_section?: {
     brand_persona: {
-      archetype: string
-      one_liner_bio: string
-      tone_voice: string
+      // 新字段
+      archetype_name?: string
+      archetype_ui_explanation?: string
+      tone_voice_description?: string
+      tone_keywords?: string[]
+      optimized_bio?: string
+      bio_ui_explanation?: string
+      analysis_deep_dive?: string
+      // 旧字段(兼容)
+      archetype?: string
+      one_liner_bio?: string
+      tone_voice?: string
     }
     target_audience: Array<{
       type: 'Main' | 'Secondary'
@@ -303,22 +312,48 @@ export function StrategySection({ auditId, profileData, diagnosisData, onDataLoa
           <div className="persona-container section-gap">
             {/* 左侧：人设信息 */}
             <div className="persona-left">
-              <span style={{ fontSize: '60px' }}>
-                {persona.archetype === 'The Indulgent Neighbor' ? '🥐' :
-                 persona.archetype === 'The Nurturing Neighbor' ? '🍜' : '✨'}
-              </span>
+              {/* 标题 */}
+              <div style={{
+                fontSize: '18px',
+                fontWeight: 600,
+                color: '#374151',
+                marginBottom: '16px',
+                letterSpacing: '0.3px'
+              }}>
+                Improvement Suggestions
+              </div>
 
-              <h3 className="text-gradient-instagram" style={{ fontSize: '36px', fontWeight: 800, margin: '10px 0' }}>
-                {persona.archetype}
+              {/* Emoji和说明并排 */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+                <span style={{ fontSize: '40px', flexShrink: 0 }}>✨</span>
+                <div style={{
+                  fontSize: '12px',
+                  color: '#6b7280',
+                  fontStyle: 'italic',
+                  lineHeight: '1.4'
+                }}>
+                  {persona.archetype_ui_explanation || 'Blending luxury day spa vibes with urban stress relief.'}
+                </div>
+              </div>
+
+              {/* Archetype名称 */}
+              <h3 className="text-gradient-instagram" style={{
+                fontSize: '28px',
+                fontWeight: 800,
+                margin: '20px 0',
+                lineHeight: '1.2'
+              }}>
+                {persona.archetype_name || persona.archetype || 'Your Brand Archetype'}
               </h3>
 
-              <p style={{ color: '#4b5563', fontSize: '18px' }}>
-                {persona.tone_voice}
+              {/* Tone描述 */}
+              <p style={{ color: '#4b5563', fontSize: '18px', lineHeight: '1.6' }}>
+                {persona.tone_voice_description || persona.tone_voice || 'Your brand voice description'}
               </p>
 
-              {/* Tag Cloud */}
+              {/* Tag Cloud - 动态显示关键词 */}
               <div className="tag-cloud">
-                {['Warm', 'Authentic', 'Community'].map((tag, i) => (
+                {(persona.tone_keywords || ['Warm', 'Authentic', 'Community']).map((tag, i) => (
                   <span key={i} className="tag-item">{tag}</span>
                 ))}
               </div>
@@ -326,10 +361,35 @@ export function StrategySection({ auditId, profileData, diagnosisData, onDataLoa
 
             {/* 右侧：手机样机 */}
             {profileData && (
-              <div className="persona-right">
+              <div className="persona-right" style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                {/* 标题 */}
+                <div style={{
+                  fontSize: '18px',
+                  fontWeight: 600,
+                  color: '#374151',
+                  marginBottom: '12px',
+                  letterSpacing: '0.3px',
+                  textAlign: 'center'
+                }}>
+                  Profile Preview
+                </div>
+
+                {/* Bio 预览说明 */}
+                <div style={{
+                  fontSize: '14px',
+                  color: '#6b7280',
+                  fontStyle: 'italic',
+                  marginBottom: '16px',
+                  textAlign: 'center'
+                }}>
+                  {persona.bio_ui_explanation || 'Optimized Bio preview'}
+                </div>
+
                 <div className="phone-flat">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', borderBottom: '1px solid #f3f4f6', paddingBottom: '15px' }}>
-                    <div style={{ width: '50px', height: '50px', background: '#eee', borderRadius: '50%', fontWeight: 'bold', display: 'grid', placeItems: 'center', overflow: 'hidden' }}>
+                  {/* 顶部:头像 + 用户名 + 统计数据 */}
+                  <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid #e5e7eb' }}>
+                    {/* 左侧头像 */}
+                    <div style={{ width: '77px', height: '77px', background: '#f3f4f6', borderRadius: '50%', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
                       {profileData.avatar_url ? (
                         <img
                           src={`/api/image-proxy?url=${encodeURIComponent(profileData.avatar_url)}`}
@@ -337,29 +397,113 @@ export function StrategySection({ auditId, profileData, diagnosisData, onDataLoa
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
                       ) : (
-                        <span>{profileData.full_name?.charAt(0).toUpperCase() || 'A'}</span>
+                        <span style={{ fontSize: '32px', color: '#9ca3af' }}>{profileData.full_name?.charAt(0).toUpperCase() || 'A'}</span>
                       )}
                     </div>
-                    <div style={{ textAlign: 'center', fontSize: '12px' }}>
-                      <b>{profileData.post_count || 0}</b><br />Posts
-                    </div>
-                    <div style={{ textAlign: 'center', fontSize: '12px' }}>
-                      <b>{profileData.follower_count >= 1000 ? `${(profileData.follower_count / 1000).toFixed(1)}K` : profileData.follower_count}</b><br />Followers
-                    </div>
-                    <div style={{ textAlign: 'center', fontSize: '12px' }}>
-                      <b>{profileData.following_count || 0}</b><br />Following
+
+                    {/* 右侧:用户名 + 统计数据 */}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px', minWidth: 0 }}>
+                      {/* 用户名 */}
+                      <div style={{
+                        fontSize: '16px',
+                        fontWeight: 600,
+                        color: '#000',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {profileData.username || profileData.full_name}
+                      </div>
+
+                      {/* 统计数据 */}
+                      <div style={{ display: 'flex', gap: '12px', fontSize: '13px' }}>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontWeight: 600, color: '#000' }}>{profileData.post_count || 0}</div>
+                          <div style={{ color: '#000' }}>posts</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontWeight: 600, color: '#000' }}>
+                            {profileData.follower_count >= 1000
+                              ? `${(profileData.follower_count / 1000).toFixed(1)}K`
+                              : profileData.follower_count}
+                          </div>
+                          <div style={{ color: '#000' }}>followers</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontWeight: 600, color: '#000' }}>{profileData.following_count || 0}</div>
+                          <div style={{ color: '#000' }}>following</div>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  <div style={{ fontSize: '14px' }}>
-                    <b>{profileData.full_name}</b><br />
-                    <span style={{ color: 'gray' }}>{profileData.category_label || 'Business'}</span><br />
-                    {persona.one_liner_bio}
+                  {/* Bio区域 */}
+                  <div style={{ fontSize: '14px', lineHeight: '1.5', marginBottom: '16px' }}>
+                    {/* 分类标签 */}
+                    <div style={{ fontWeight: 600, marginBottom: '8px', color: '#000' }}>
+                      {profileData.category_label || 'None,Product/service'}
+                    </div>
+
+                    {/* Bio内容 */}
+                    <div style={{ color: '#000', whiteSpace: 'pre-wrap' }}>
+                      {persona.optimized_bio || persona.one_liner_bio}
+                    </div>
                   </div>
 
-                  <button style={{ width: '100%', background: '#0095f6', color: 'white', border: 'none', padding: '8px', borderRadius: '6px', fontWeight: 600, marginTop: '15px' }}>
-                    Follow
-                  </button>
+                  {/* 底部按钮组 */}
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {/* Follow按钮 */}
+                    <button style={{
+                      flex: 1,
+                      background: '#0095f6',
+                      color: 'white',
+                      border: 'none',
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      fontWeight: 600,
+                      fontSize: '14px',
+                      cursor: 'pointer'
+                    }}>
+                      Follow
+                    </button>
+
+                    {/* Message按钮 */}
+                    <button style={{
+                      flex: 1,
+                      background: '#efefef',
+                      color: '#000',
+                      border: 'none',
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      fontWeight: 600,
+                      fontSize: '14px',
+                      cursor: 'pointer'
+                    }}>
+                      Message
+                    </button>
+
+                    {/* 添加好友图标按钮 */}
+                    <button style={{
+                      background: '#efefef',
+                      color: '#000',
+                      border: 'none',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      fontWeight: 600,
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <line x1="19" y1="8" x2="19" y2="14"/>
+                        <line x1="22" y1="11" x2="16" y2="11"/>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

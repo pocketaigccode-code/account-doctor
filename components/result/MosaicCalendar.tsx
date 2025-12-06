@@ -94,6 +94,9 @@ export function MosaicCalendar({
   const [pexelsImages, setPexelsImages] = useState<string[]>([])
   const [loadingImages, setLoadingImages] = useState(false)
 
+  // 弹窗状态
+  const [showModal, setShowModal] = useState(false)
+
   // 加载 Pexels 图片
   useEffect(() => {
     const pexelsQuery = (day1Detail as any).pexels_query
@@ -350,12 +353,45 @@ export function MosaicCalendar({
 
               {/* Lock Overlay */}
               <div className="lock-overlay">
-                <button
+                <a
+                  href="https://www.sidewalksocial.ai/"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="lock-btn"
-                  onClick={() => trackClick('unlock_click')}
+                  onClick={() => trackClick('unlock_click', {
+                    user_id: profileData?.username || auditId,
+                    component_location: 'MosaicCalendar',
+                    event_category: 'calendar'
+                  })}
+                  style={{
+                    background: 'linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #FCB045 100%)',
+                    color: 'white',
+                    fontWeight: 600,
+                    padding: '14px 32px',
+                    borderRadius: '30px',
+                    fontSize: '15px',
+                    boxShadow: '0 6px 20px rgba(253, 29, 29, 0.4)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-3px)';
+                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(253, 29, 29, 0.5)';
+                    e.currentTarget.style.opacity = '0.9';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(253, 29, 29, 0.4)';
+                    e.currentTarget.style.opacity = '1';
+                  }}
                 >
                   🔒 Unlock Full Calendar
-                </button>
+                </a>
               </div>
             </div>
           </div>
@@ -410,7 +446,7 @@ export function MosaicCalendar({
                   {/* 用户名 */}
                   <div style={{ flex: 1 }}>
                     <p style={{ fontWeight: 'bold', fontSize: '14px', lineHeight: '1.2' }}>
-                      {profileData?.handle?.replace('@', '') || 'yourbusiness'}
+                      {profileData?.username || 'yourbusiness'}
                     </p>
                   </div>
                   <span style={{ fontSize: '20px' }}>...</span>
@@ -428,34 +464,10 @@ export function MosaicCalendar({
                           width: '100%',
                           height: '100%',
                           objectFit: 'cover',
-                          filter: 'blur(3px)',
+                          filter: 'blur(4px)',
                           transform: 'scale(1.05)' // 轻微放大避免模糊边缘
                         }}
                       />
-                      {/* 锁定遮罩 */}
-                      <div style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        display: 'grid',
-                        placeItems: 'center',
-                        background: 'rgba(255, 255, 255, 0.3)'
-                      }}>
-                        <div style={{
-                          background: 'white',
-                          padding: '20px 30px',
-                          borderRadius: '20px',
-                          boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
-                          textAlign: 'center'
-                        }}>
-                          <div style={{ fontSize: '40px', marginBottom: '8px' }}>🔒</div>
-                          <div style={{ fontSize: '13px', fontWeight: 700, color: '#111' }}>
-                            Unlock to View
-                          </div>
-                        </div>
-                      </div>
                     </>
                   ) : (
                     <div style={{ display: 'grid', placeItems: 'center', height: '100%' }}>
@@ -506,7 +518,7 @@ export function MosaicCalendar({
                 {/* Caption - 自适应高度，无滚动条 */}
                 <div style={{ padding: '16px', fontSize: '13px', lineHeight: '1.6' }}>
                   <div style={{ marginBottom: '10px' }}>
-                    <strong>{profileData?.handle?.replace('@', '') || 'yourbusiness'}</strong>{' '}
+                    <strong>{profileData?.username || 'yourbusiness'}</strong>{' '}
                     {day1Detail.caption}
                   </div>
                   <div style={{ color: '#00376b', fontSize: '12px' }}>
@@ -519,23 +531,179 @@ export function MosaicCalendar({
 
           {/* VIP Service Button - 放在手机预览下方 */}
           <div className="text-center mt-6">
-            <a
-              href="mailto:pocketaigc@gmail.com?subject=Instagram Account Management Service Inquiry"
-              onClick={() => trackClick('vip_service_click')}
-              className="inline-block text-sm text-gray-600 hover:text-gray-900 transition-colors"
+            <button
+              onClick={() => {
+                trackClick('vip_service_click', {
+                  user_id: profileData?.username || auditId,
+                  component_location: 'MosaicCalendar',
+                  event_category: 'service'
+                })
+                setShowModal(true)
+              }}
+              className="inline-block text-sm transition-all hover:shadow-lg"
               style={{
-                padding: '10px 20px',
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-                textDecoration: 'none',
-                background: 'white'
+                padding: '14px 28px',
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #FCB045 100%)',
+                color: 'white',
+                fontWeight: 600,
+                boxShadow: '0 4px 12px rgba(253, 29, 29, 0.3)',
+                transition: 'all 0.3s ease',
+                border: 'none',
+                cursor: 'pointer'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(253, 29, 29, 0.4)';
+                e.currentTarget.style.opacity = '0.9';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(253, 29, 29, 0.3)';
+                e.currentTarget.style.opacity = '1';
               }}
             >
               Too busy to DIY? Let us manage it for you.
-            </a>
+            </button>
           </div>
         </div>
       </div>
+
+      {/* 弹窗 Modal */}
+      {showModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            backdropFilter: 'blur(4px)'
+          }}
+          onClick={() => setShowModal(false)}
+        >
+          <div
+            style={{
+              background: 'white',
+              borderRadius: '20px',
+              padding: '40px',
+              maxWidth: '500px',
+              width: '90%',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+              animation: 'slideUp 0.3s ease-out'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 关闭按钮 */}
+            <button
+              onClick={() => setShowModal(false)}
+              style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px',
+                background: 'transparent',
+                border: 'none',
+                fontSize: '24px',
+                cursor: 'pointer',
+                color: '#9ca3af'
+              }}
+            >
+              ✕
+            </button>
+
+            {/* 标题 */}
+            <h3 style={{
+              fontSize: '24px',
+              fontWeight: 700,
+              marginBottom: '24px',
+              textAlign: 'center',
+              color: '#111'
+            }}>
+              Choose Your Solution
+            </h3>
+
+            {/* 选项1：试用产品 */}
+            <a
+              href="https://www.sidewalksocial.ai/"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackClick('modal_option1_click', {
+                user_id: profileData?.username || auditId,
+                component_location: 'MosaicCalendar_Modal',
+                event_category: 'modal',
+                metadata: { option: 'product', url: 'https://www.sidewalksocial.ai/' }
+              })}
+              style={{
+                display: 'block',
+                padding: '20px',
+                borderRadius: '12px',
+                border: '2px solid #e5e7eb',
+                marginBottom: '16px',
+                textDecoration: 'none',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#667eea';
+                e.currentTarget.style.background = '#f9fafb';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#e5e7eb';
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              <div style={{ fontSize: '28px', marginBottom: '8px' }}>🚀</div>
+              <div style={{ fontSize: '16px', fontWeight: 600, color: '#111', marginBottom: '6px' }}>
+                Try Our All-in-One Content Creation Platform!
+              </div>
+              <div style={{ fontSize: '14px', color: '#6b7280' }}>
+                sidewalksocial.ai - AI-powered social media content creation
+              </div>
+            </a>
+
+            {/* 选项2：代运营服务 */}
+            <a
+              href="mailto:pocketaigc@gmail.com?subject=Instagram Account Management Service Inquiry&body=Hi, I'm interested in your Instagram account management service. Could you please provide more details?"
+              onClick={() => trackClick('modal_option2_click', {
+                user_id: profileData?.username || auditId,
+                component_location: 'MosaicCalendar_Modal',
+                event_category: 'modal',
+                metadata: { option: 'managed_service', email: 'pocketaigc@gmail.com' }
+              })}
+              style={{
+                display: 'block',
+                padding: '20px',
+                borderRadius: '12px',
+                border: '2px solid #e5e7eb',
+                textDecoration: 'none',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#3b82f6';
+                e.currentTarget.style.background = '#f9fafb';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#e5e7eb';
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              <div style={{ fontSize: '28px', marginBottom: '8px' }}>💼</div>
+              <div style={{ fontSize: '16px', fontWeight: 600, color: '#111', marginBottom: '6px' }}>
+                No Time to DIY? Let Us Handle It!
+              </div>
+              <div style={{ fontSize: '14px', color: '#6b7280' }}>
+                Professional team to manage your content creation
+              </div>
+            </a>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

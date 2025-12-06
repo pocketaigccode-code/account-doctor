@@ -11,7 +11,6 @@ import { ProfileSnapshot } from '@/components/result/ProfileSnapshot'
 import { StrategySection } from '@/components/result/StrategySection'
 import { UnifiedStrategyDashboard } from '@/components/result/UnifiedStrategyDashboard'
 import { PageLoadingAnimation, AILoadingAnimation } from '@/components/loading/AILoadingAnimation'
-import { DeductionsBreakdown } from '@/components/result/DeductionsBreakdown'
 
 
 
@@ -145,22 +144,51 @@ export default function AuditResultPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-body)' }}>
-      {/* Navigation - 参考Sidewalk极简设计 */}
-      <nav className="bg-white/80 backdrop-blur-sm border-b border-sand-200">
-        <div className="container-sidewalk py-5 flex justify-between items-center">
-          <h1 className="font-serif text-charcoal-900 text-xl font-bold">AccountDoctor</h1>
+      {/* Navigation - Instagram Style Header */}
+      <header className="sticky top-0 z-50 w-full bg-white border-b border-[#dbdbdb] h-[60px]">
+        <div className="max-w-[935px] mx-auto h-full flex items-center justify-between px-4 lg:px-0">
 
-          <div className="flex items-center gap-4">
-            {/* 返回首页 */}
-            <button
-              onClick={() => (window.location.href = '/')}
-              className="text-charcoal-600 hover:text-charcoal-900 text-sm font-sans font-medium transition-colors"
+          {/* Left: Navigation */}
+          <button
+            onClick={() => (window.location.href = '/')}
+            className="flex items-center gap-1 sm:gap-2 text-[#262626] hover:opacity-70 transition-opacity group whitespace-nowrap"
+          >
+            <svg
+              className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              Home
-            </button>
-          </div>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            <span className="font-semibold text-xs sm:text-sm tracking-tight">Back to Home</span>
+          </button>
+
+          {/* Center: CTA Button */}
+          <a
+            href="https://www.sidewalksocial.ai/"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => {
+              import('@/lib/analytics-tracker').then(({ trackClick }) => {
+                trackClick('cta_sidewalk_click', {
+                  user_id: instantData?.username || auditId,
+                  component_location: 'AuditResultPage-Header',
+                  event_category: 'cta',
+                  metadata: { destination: 'sidewalksocial.ai' }
+                })
+              })
+            }}
+            className="flex items-center gap-1 sm:gap-2 bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#FCB045] hover:opacity-90 text-white px-3 py-1.5 sm:px-5 sm:py-2 rounded-[8px] text-xs sm:text-sm font-semibold transition-opacity whitespace-nowrap sm:absolute sm:left-1/2 sm:-translate-x-1/2"
+          >
+            <span>✨ Meet Sidewalk: AI Manager~</span>
+          </a>
+
+          {/* Right: Empty Space for Balance */}
+          <div className="w-[120px]"></div>
+
         </div>
-      </nav>
+      </header>
 
       {/* Main Content - 使用Sidewalk容器样式 */}
       <main className="container-sidewalk" style={{ paddingTop: '60px', paddingBottom: '80px' }}>
@@ -171,20 +199,6 @@ export default function AuditResultPage({ params }: PageProps) {
         {diagnosisData ? (
           <>
             <DiagnosisCard data={diagnosisData} />
-
-            {/* 扣分明细展示 */}
-            {diagnosisData.deductions && diagnosisData.deductions.length > 0 && (
-              <div className="section-gap">
-                <h2 className="section-title text-center">Score Breakdown</h2>
-                <p className="section-subtitle text-center mb-8">
-                  See exactly where points were deducted and how to fix them
-                </p>
-                <DeductionsBreakdown
-                  deductions={diagnosisData.deductions}
-                  initialScore={100}
-                />
-              </div>
-            )}
           </>
         ) : aiFailed ? (
           <DiagnosisCardAIFailed />
@@ -303,7 +317,7 @@ function Day1Preview({ day1, profileData }: { day1: any, profileData?: any }) {
             {/* Instagram Post Header */}
             <div style={{ padding: '15px', display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
               <span style={{ fontWeight: 'bold', fontSize: '12px' }}>
-                {profileData?.handle?.replace('@', '') || 'yourbusiness'}
+                {profileData?.username || 'yourbusiness'}
               </span>
               <span>...</span>
             </div>
@@ -324,7 +338,7 @@ function Day1Preview({ day1, profileData }: { day1: any, profileData?: any }) {
                 <div style={{ width: '20px', height: '20px', background: '#ef4444', borderRadius: '50%' }}></div>
                 <div style={{ width: '20px', height: '20px', background: '#eee', borderRadius: '50%' }}></div>
               </div>
-              <strong>{profileData?.handle?.replace('@', '') || 'yourbusiness'}</strong>{' '}
+              <strong>{profileData?.username || 'yourbusiness'}</strong>{' '}
               {day1.caption.substring(0, 80)}...
               <br />
               <span style={{ color: '#00376b' }}>{day1.hashtags.slice(0, 3).join(' ')}</span>
@@ -472,10 +486,9 @@ function DiagnosisCard({ data }: { data: any }) {
   const { score, summary_title, key_issues } = data
 
   const getScoreColor = (s: number) => {
-    if (s >= 80) return { label: 'EXCELLENT', color: '#10b981' }
-    if (s >= 60) return { label: 'GOOD', color: '#3B82F6' }
-    if (s >= 40) return { label: 'NEEDS WORK', color: '#F59E0B' }
-    return { label: 'WARNING', color: '#ef4444' }
+    if (s >= 80) return { label: 'EXCELLENT', color: '#10b981' } // 绿色
+    if (s >= 50) return { label: 'GOOD', color: '#F59E0B' } // 黄色
+    return { label: 'NEEDS WORK', color: '#ef4444' } // 红色
   }
 
   const scoreInfo = getScoreColor(score)
@@ -495,21 +508,41 @@ function DiagnosisCard({ data }: { data: any }) {
           {summary_title}
         </p>
 
-        {/* 半圆仪表盘 - 完全参考HTML */}
-        <div className="gauge-wrap">
-          <div className="gauge-bg"></div>
-          <div
-            className="gauge-fill"
-            style={{ transform: `rotate(${rotation - 90}deg)` }}
-          ></div>
-          <div className="gauge-center">
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '56px', fontWeight: 800, lineHeight: 1, color: 'var(--text-main)' }}>
-                {score}
-              </div>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: scoreInfo.color }}>
-                {scoreInfo.label}
-              </div>
+        {/* 半圆仪表盘 - SVG 填充 */}
+        <div style={{ position: 'relative', width: '240px', height: '120px', margin: '40px auto 20px' }}>
+          <svg width="240" height="120" viewBox="0 0 240 120">
+            {/* 灰色背景半圆环 */}
+            <path
+              d="M 20 120 A 100 100 0 0 1 220 120"
+              fill="none"
+              stroke="#e5e7eb"
+              strokeWidth="40"
+              strokeLinecap="round"
+            />
+            {/* 黄色填充半圆环 - 从左到右 */}
+            <path
+              d="M 20 120 A 100 100 0 0 1 220 120"
+              fill="none"
+              stroke={scoreInfo.color}
+              strokeWidth="40"
+              strokeLinecap="round"
+              strokeDasharray={`${(score / 100) * 314} 314`}
+              style={{ transition: 'stroke-dasharray 1s ease-out' }}
+            />
+          </svg>
+          {/* 分数显示 */}
+          <div style={{
+            position: 'absolute',
+            bottom: '0',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '56px', fontWeight: 800, lineHeight: 1, color: 'var(--text-main)' }}>
+              {score}
+            </div>
+            <div style={{ fontSize: '14px', fontWeight: 700, color: scoreInfo.color }}>
+              {scoreInfo.label}
             </div>
           </div>
         </div>
