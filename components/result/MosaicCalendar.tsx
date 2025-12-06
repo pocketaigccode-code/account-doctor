@@ -453,21 +453,126 @@ export function MosaicCalendar({
                 </div>
 
                 {/* Image Placeholder - Pexels图片预览 */}
-                <div style={{ height: '320px', background: '#f3f4f6', position: 'relative', overflow: 'hidden' }}>
+                <div className="group" style={{ height: '320px', background: '#f3f4f6', position: 'relative', overflow: 'hidden', cursor: 'default' }}>
                   {pexelsImages.length > 0 ? (
                     <>
-                      {/* Pexels图片（模糊） */}
+                      {/* Pexels图片（放大） */}
                       <img
                         src={pexelsImages[0]}
                         alt="Content preview"
+                        className="transition-transform duration-700 group-hover:scale-100"
                         style={{
                           width: '100%',
                           height: '100%',
                           objectFit: 'cover',
-                          filter: 'blur(4px)',
-                          transform: 'scale(1.05)' // 轻微放大避免模糊边缘
+                          transform: 'scale(1.1)'
                         }}
                       />
+
+                      {/* 毛玻璃覆盖层 */}
+                      <div
+                        className="transition-all duration-500 group-hover:backdrop-blur-[2px]"
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                          backdropFilter: 'blur(4px)',
+                          WebkitBackdropFilter: 'blur(4px)'
+                        }}
+                      />
+
+                      {/* 中间AI标签 */}
+                      <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <div
+                          className="transition-all duration-300 hover:scale-105 hover:rotate-0"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '10px 20px',
+                            background: 'rgba(255, 255, 255, 0.8)',
+                            backdropFilter: 'blur(12px)',
+                            WebkitBackdropFilter: 'blur(12px)',
+                            border: '1px solid rgba(255, 255, 255, 0.6)',
+                            borderRadius: '9999px',
+                            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
+                            transform: 'rotate(-5deg)',
+                            cursor: 'default'
+                          }}
+                        >
+                          <span style={{
+                            fontSize: '18px',
+                            lineHeight: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            marginTop: '10px',
+                            marginLeft: '10px'
+                          }} className="animate-pulse">✨</span>
+                          <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+                            <span style={{
+                              fontSize: '10px',
+                              color: '#6b7280',
+                              fontWeight: 600,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.05em',
+                              marginBottom: '2px'
+                            }}>Recommended Vibe</span>
+                            <span style={{
+                              fontSize: '14px',
+                              fontWeight: 700,
+                              color: '#1f2937'
+                            }}>AI Suggested Aesthetic</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 右下角趋势匹配标签 */}
+                      <div
+                        className="transition-all duration-300 hover:rotate-0 hover:scale-105"
+                        style={{
+                          position: 'absolute',
+                          bottom: '6px',
+                          right: '6px',
+                          background: 'rgba(255, 255, 255, 0.95)',
+                          padding: '6px 12px',
+                          borderRadius: '12px',
+                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          border: '1px solid rgba(255, 255, 255, 0.5)',
+                          transform: 'rotate(-5deg)',
+                          cursor: 'default'
+                        }}
+                      >
+                        <div style={{
+                          background: '#fef2f2',
+                          padding: '4px',
+                          borderRadius: '50%'
+                        }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="#ef4444" className="animate-pulse">
+                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                          </svg>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            color: '#1f2937'
+                          }}>High Engagement</span>
+                          <span style={{
+                            fontSize: '10px',
+                            fontWeight: 600,
+                            color: '#16a34a'
+                          }}>Trend Match 98%</span>
+                        </div>
+                      </div>
                     </>
                   ) : (
                     <div style={{ display: 'grid', placeItems: 'center', height: '100%' }}>
