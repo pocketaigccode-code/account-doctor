@@ -353,7 +353,7 @@ export function StrategySection({ auditId, profileData, diagnosisData, onDataLoa
 
               {/* Tag Cloud - 动态显示关键词 */}
               <div className="tag-cloud">
-                {(persona.tone_keywords || ['Warm', 'Authentic', 'Community']).map((tag, i) => (
+                {(persona.tone_keywords || ['Warm', 'Authentic', 'Community']).map((tag: string, i: number) => (
                   <span key={i} className="tag-item">{tag}</span>
                 ))}
               </div>
