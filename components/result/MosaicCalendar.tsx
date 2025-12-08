@@ -354,7 +354,7 @@ export function MosaicCalendar({
               {/* Lock Overlay */}
               <div className="lock-overlay">
                 <a
-                  href="https://www.sidewalksocial.ai/"
+                                    href="https://www.sidewalksocial.ai/?utm_source=account-doctor&utm_medium=referral&utm_campaign=calendar_unlock"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="lock-btn"
@@ -734,7 +734,7 @@ export function MosaicCalendar({
 
             {/* 选项1：试用产品 */}
             <a
-              href="https://www.sidewalksocial.ai/"
+              href="https://www.sidewalksocial.ai/?utm_source=account-doctor&utm_medium=referral&utm_campaign=modal_product_try"
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => trackClick('modal_option1_click', {

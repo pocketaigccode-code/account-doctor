@@ -166,7 +166,7 @@ export default function AuditResultPage({ params }: PageProps) {
 
           {/* Center: CTA Button */}
           <a
-            href="https://www.sidewalksocial.ai/"
+            href="https://www.sidewalksocial.ai/?utm_source=account-doctor&utm_medium=referral&utm_campaign=header_cta_meet_sidewalk"
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => {
