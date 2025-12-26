@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
     if (!cacheHit) {
       auditId = randomUUID()
 
-      await supabaseAdmin
+      const { data, error } = await supabaseAdmin
         .from('audits')
         .insert({
           id: auditId,
@@ -146,6 +146,11 @@ export async function POST(request: NextRequest) {
           status: 'snapshot_ready',  // ✅ 改为 snapshot_ready (Fast Lane完成)
           expires_at: getExpiresAt().toISOString()
         })
+
+      if (error) {
+        console.error('[Database] Insert failed:', error)
+        throw new Error(`Database insert failed: ${error.message}`)
+      }
 
       console.log(`[Database] Saved initial data for: ${auditId}`)
 
